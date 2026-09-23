@@ -72,3 +72,20 @@ test('skill pilot scripts provide new isolated fixture; synthetic stand-in does 
  const resume=sh(process.execPath,[prep.skill_entry,'--store',prep.store,'resume',prep.task_id]);assert.equal(resume.status,0,resume.stderr);
  assert.equal(JSON.parse(resume.stdout).state,'COMPLETED');
 });
+test('installed Skill rejects a stale HEAD receipt rather than trusting self-reported PASS',t=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'relay-skill-stale-'));t.after(()=>fs.rmSync(temp,{recursive:true,force:true}));
+ const target=path.join(temp,'skills'),{p,g}=repo(temp);
+ const install=sh(process.execPath,[installer,'--target-root',target]);assert.equal(install.status,0,install.stderr);
+ const entry=JSON.parse(install.stdout).entry,store=path.join(temp,'state');
+ const call=(...args)=>sh(process.execPath,[entry,'--store',store,...args]);
+ let r=call('create','--goal','Fix addition','--repo',p,'--actor','local-agent','--allowed','calc.mjs','--test','calc.test.mjs');assert.equal(r.status,0,r.stderr);
+ const task=JSON.parse(r.stdout);assert.equal(call('handoff',task.id).status,0);
+ fs.writeFileSync(path.join(p,'calc.mjs'),'export function add(a,b){return a+b;}\n');g('add','calc.mjs');g('commit','-qm','fix');
+ const receipt={receipt_id:'stale-1',task_id:task.id,actor:'local-agent',status:'PASS',base_commit:task.base,
+  head_commit:task.base,evidence:[{kind:'file_hash',path:'calc.mjs',sha256:'self-report-not-trusted'}]};
+ const file=path.join(temp,'receipt.json');fs.writeFileSync(file,JSON.stringify(receipt));
+ assert.equal(call('receipt',task.id,'--file',file).status,0);
+ r=call('verify',task.id);assert.equal(r.status,0,r.stderr);
+ assert.equal(JSON.parse(r.stdout).review.reason,'STALE_HEAD');
+ assert.equal(JSON.parse(call('resume',task.id).stdout).state,'BLOCKED');
+});
