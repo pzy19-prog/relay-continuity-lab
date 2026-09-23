@@ -1,0 +1,13 @@
+{
+  "name": "relay-lab-local-prototype",
+  "private": true,
+  "version": "0.0.1-prealpha",
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "relay": "node src/cli.mjs",
+    "ui": "node src/web.mjs",
+    "test": "node --test tests/*.test.mjs && node benchmark/smoke.mjs"
+  },
+  "license": "MIT"
+}
