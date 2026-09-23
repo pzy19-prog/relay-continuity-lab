@@ -4,7 +4,7 @@
 
 **状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；尚未完成真实跨 Agent E2E。**
 
-Relay Lab 验证不同 AI 使用界面之间的任务连续性。本资料包现已实现：单用户本地 Core、CLI、人工交接 Packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、一份尚未在真实 Agent 中安装的 Skill，以及**只读**的轻量 Web 时间线。**尚未自动连接** ChatGPT Chat、Work、Codex、Claude 或 Gemini。演示程序用模拟执行者和模拟人工审批，不能当作真实的跨 Agent 执行证据。
+Relay Lab 验证不同 AI 使用界面之间的任务连续性。本资料包现已实现：单用户本地 Core、CLI、人工交接 Packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、一份可安装的项目级 Skill（真实 Agent 调用待验证），以及**只读**的轻量 Web 时间线。**尚未自动连接** ChatGPT Chat、Work、Codex、Claude 或 Gemini。演示程序用模拟执行者和模拟人工审批，不能当作真实的跨 Agent 执行证据。
 
 > 待验证的产品假设：跨 AI 界面保留正确的任务状态、约束与证据，无需反复粘贴完整对话；遇到过期环境或证据不足时明确阻断。
 
@@ -81,3 +81,17 @@ Skill / CLI（人工交接）       Web 时间线（只读）
 - [产品路线](docs/roadmap-v0.1.md)：此前计划；实际完成程度以本 README 为准。
 
 **由 PZY Nexus 孵化**（仅用于说明来源；产品独立可运行，不依赖 Nexus）。
+## G3：安装并试用项目级 Skill
+
+不再下载 ZIP，也不需要操作原 G2 的临时目录：
+
+```bash
+cd ~/relay-continuity-lab
+git pull --ff-only
+npm test
+node scripts/skill-pilot-prepare.mjs
+```
+
+脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
+
+18 项集成测试和 10 项设计断言已在隔离开发容器通过；**用户 WSL 的真实 Skill 调用尚未获得证据**。
