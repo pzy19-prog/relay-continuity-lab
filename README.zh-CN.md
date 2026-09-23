@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2 已完成限定范围内的真实本地 Agent 人工交接闭环；尚未实现自动跨界面交接。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2 已完成真实本地 Agent 人工交接闭环；G3 已完成一次真实项目级 Skill 的发现、自动绑定、执行、独立验证与恢复闭环；G4 正在验证 Chat → Work → Codex 显式中转。**
 
 Relay Lab 验证不同 AI 使用界面之间的任务连续性。本资料包现已实现：单用户本地 Core、CLI、人工交接 Packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、一份可安装的项目级 Skill（真实 Agent 调用待验证），以及**只读**的轻量 Web 时间线。**尚未自动连接** ChatGPT Chat、Work、Codex、Claude 或 Gemini。演示程序用模拟执行者和模拟人工审批，不能当作真实的跨 Agent 执行证据。
 
@@ -93,4 +93,8 @@ node scripts/skill-pilot-prepare.mjs
 
 脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
 
-19 项集成测试和 10 项设计断言已在隔离开发容器通过；**用户 WSL 的真实 Skill 调用尚未获得证据**。
+最近一次 G4 修改前的用户 WSL 基线为 **21/21 Node 测试 + 10/10 合成断言通过**；G4 新增 transport 代码仍待重新在 WSL 运行。G3 的真实 Skill 调用已经完成验收。
+
+## G4：Chat → Work → Codex 显式中转
+
+G4 暂时使用专用 GitHub Issue 作为可审计 transport：Chat 发布封装后的意图包，Work 产生结构化 continuation draft，Chat 负责确定性校验和封装，WSL 再校验 packet chain 并以同一个 canonical task ID 创建本地 Relay 任务。详见 [G4 指南](docs/g4-chat-work-codex.md)。这不等于隐藏会话同步，也不是 Work 直接访问 WSL。
