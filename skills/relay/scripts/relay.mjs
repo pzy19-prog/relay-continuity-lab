@@ -1,9 +1,60 @@
 #!/usr/bin/env node
-// Installed Skill delegates to copied CLI/Core; the user's task state is in RELAY_STORE.
+// Installed Skill delegates to copied CLI/Core. Project state may be bound by .relay-lab.json.
+import fs from 'node:fs';
+import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import path from 'node:path';
+
 const cli = fileURLToPath(new URL('../vendor/cli.mjs', import.meta.url));
-const res=spawnSync(process.execPath, [cli,...process.argv.slice(2)], {stdio:'inherit',cwd:process.cwd(),env:process.env});
+const argv = process.argv.slice(2);
+const env = {...process.env};
+
+function findProjectBinding(start) {
+  let dir = path.resolve(start);
+  while (true) {
+    const candidate = path.join(dir, '.relay-lab.json');
+    if (fs.existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+if (!argv.includes('--store') && !env.RELAY_STORE) {
+  const binding = findProjectBinding(process.cwd());
+  if (binding) {
+    const st = fs.lstatSync(binding);
+    if (!st.isFile() || st.isSymbolicLink()) {
+      console.error('RELAY_SKILL_ERROR: PROJECT_BINDING_INVALID');
+      process.exit(2);
+    }
+    let cfg;
+    try { cfg = JSON.parse(fs.readFileSync(binding, 'utf8')); }
+    catch { console.error('RELAY_SKILL_ERROR: PROJECT_BINDING_INVALID_JSON'); process.exit(2); }
+    if (cfg.schema !== 1 || cfg.id !== 'relay-continuity-lab/project-binding' || typeof cfg.store !== 'string' || !cfg.store) {
+      console.error('RELAY_SKILL_ERROR: PROJECT_STORE_UNBOUND');
+      process.exit(2);
+    }
+    env.RELAY_STORE = path.resolve(path.dirname(binding), cfg.store);
+  }
+}
+
+// A project-scoped Skill must never silently read another task from ~/.relay-lab-local.
+if (!argv.includes('--store') && !env.RELAY_STORE) {
+  const manifest = fileURLToPath(new URL('../INSTALL.json', import.meta.url));
+  if (fs.existsSync(manifest)) {
+    try {
+      if (JSON.parse(fs.readFileSync(manifest, 'utf8')).scope === 'project') {
+        console.error('RELAY_SKILL_ERROR: PROJECT_STORE_UNBOUND');
+        process.exit(2);
+      }
+    } catch {
+      console.error('RELAY_SKILL_ERROR: INSTALL_MANIFEST_INVALID');
+      process.exit(2);
+    }
+  }
+}
+
+const res=spawnSync(process.execPath, [cli,...argv], {stdio:'inherit',cwd:process.cwd(),env});
 if(res.error){console.error(res.error.message);process.exitCode=1;}
 else process.exitCode = res.status === null ? 1 : res.status;
