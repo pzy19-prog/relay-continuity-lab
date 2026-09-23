@@ -68,7 +68,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-In the isolated artifact container the packaged prototype passed **18 integration tests and 10 design assertions**. The four new regressions reject post-receipt dirty worktrees, untracked file changes, symlink replacement of evidence and symlink test inputs. Tests execute trusted local repository code, not an untrusted-code sandbox. The actual Chat/Work/Codex handoff and upstream competitor tests remain unverified.
+In the isolated artifact container the packaged prototype passed **19 integration tests and 10 design assertions**. The four new regressions reject post-receipt dirty worktrees, untracked file changes, symlink replacement of evidence and symlink test inputs. Tests execute trusted local repository code, not an untrusted-code sandbox. The actual Chat/Work/Codex handoff and upstream competitor tests remain unverified.
 
 ## Research / public development
 
