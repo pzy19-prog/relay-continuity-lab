@@ -4,7 +4,7 @@
 
 **Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand, public release or actual cross-Agent E2E is claimed.**
 
-Relay Lab explores evidence-bound task continuity across specialized AI surfaces. This starter **actually implements** a local single-user Core, CLI, manual handoff packet, explicit receipt + independent Git/file/test checks, persisted checkpoint/resume, a portable **uninstalled** instructional Skill, and a *read-only* thin Web timeline. It **does not** integrate automatically with ChatGPT Chat, Work, Codex, Claude, or Gemini. The included demo substitutes a synthetic executor and a recorded synthetic approval; do not represent it as a live Agent run.
+Relay Lab explores evidence-bound task continuity across specialized AI surfaces. This starter **actually implements** a local single-user Core, CLI, manual handoff packet, explicit receipt + independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, and a *read-only* thin Web timeline. It **does not** integrate automatically with ChatGPT Chat, Work, Codex, Claude, or Gemini. The included demo substitutes a synthetic executor and a recorded synthetic approval; do not represent it as a live Agent run.
 
 > Product thesis (to be tested): preserve the right task state, constraints and evidence across AI surfaces without repeatedly restating the full conversation — and fail visibly when evidence or environment is inconsistent.
 
@@ -69,7 +69,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-In the isolated artifact container the packaged prototype passed **13 integration tests and 10 design assertions**. The four new regressions reject post-receipt dirty worktrees, untracked file changes, symlink replacement of evidence and symlink test inputs. Tests execute trusted local repository code, not an untrusted-code sandbox. The actual Chat/Work/Codex handoff and upstream competitor tests remain unverified.
+In the isolated artifact container the packaged prototype passed **18 integration tests and 10 design assertions**. The four new regressions reject post-receipt dirty worktrees, untracked file changes, symlink replacement of evidence and symlink test inputs. Tests execute trusted local repository code, not an untrusted-code sandbox. The actual Chat/Work/Codex handoff and upstream competitor tests remain unverified.
 
 ## Research / public development
 
@@ -81,3 +81,12 @@ In the isolated artifact container the packaged prototype passed **13 integratio
 - [Roadmap](docs/roadmap-v0.1.md) — prior plan; current implementation status is this README.
 
 **Working name only — brand unverified.** An Apache/MIT-style open source license is not a product readiness claim. **Incubated by PZY Nexus** (provenance only; independently usable, not a runtime dependency).
+## G3 — Try the installable Skill on a fresh synthetic fixture
+
+```bash
+git pull --ff-only
+npm test
+node scripts/skill-pilot-prepare.mjs
+```
+
+This prepares a **new** isolated repository with a committed project-level `.agents/skills/relay-lab/` Skill and a generated `AGENT_TASK.md`. Open only that generated repo in Cursor WSL and ask an authorized Agent to discover **and actually invoke** the project Skill before performing the constrained calculator fix. After its commit, run `node scripts/skill-pilot-finish.mjs <pilot_dir>` back in the Relay source checkout. Explicit human approval is still mandatory. See [中文操作说明](docs/skill-pilot.zh-CN.md).
