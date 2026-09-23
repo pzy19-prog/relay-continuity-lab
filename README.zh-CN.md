@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；尚未完成真实跨 Agent E2E。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2 已完成限定范围内的真实本地 Agent 人工交接闭环；尚未实现自动跨界面交接。**
 
 Relay Lab 验证不同 AI 使用界面之间的任务连续性。本资料包现已实现：单用户本地 Core、CLI、人工交接 Packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、一份可安装的项目级 Skill（真实 Agent 调用待验证），以及**只读**的轻量 Web 时间线。**尚未自动连接** ChatGPT Chat、Work、Codex、Claude 或 Gemini。演示程序用模拟执行者和模拟人工审批，不能当作真实的跨 Agent 执行证据。
 
@@ -19,16 +19,15 @@ npm test
 node scripts/pilot-prepare.mjs
 ```
 
-只允许 Agent 访问脚本生成的**合成临时仓库**，不能复制真实私人仓库或密钥。执行器提交后使用 `node scripts/pilot-finish.mjs <脚本实际输出目录>` 校验，再人工审查决定是否通过。本文件生成时尚未有真实 Agent 运行。
+只允许 Agent 访问脚本生成的**合成临时仓库**，不能复制真实私人仓库或密钥。执行器提交后使用 `node scripts/pilot-finish.mjs <脚本实际输出目录>` 校验，再人工审查决定是否通过。G2 已在用户 WSL 完成真实本地 Agent 的修改提交、独立校验、人工批准和独立进程恢复；G3 的真实 Skill 调用仍待验证。
 
-在**有网络的 WSL** 中还可运行 `bash scripts/competitor-smoke-wsl.sh`（Handoff 仅本地 `--dry-run`，不外传）及 `bash scripts/brand-audit-wsl.sh`（公开注册表检索；不等于商标核准）。
 
 ## 离线运行（Node >=22、Git）
 
 ```bash
 npm test
 npm run relay -- list
-node scripts/demo.mjs
+node scripts/skill-pilot-prepare.mjs
 # 从脚本输出中取得真实的 store 路径：
 RELAY_STORE=/tmp/<实际生成目录>/state npm run ui
 # 本机浏览器打开 http://127.0.0.1:4317
@@ -69,16 +68,16 @@ Skill / CLI（人工交接）       Web 时间线（只读）
 
 ## 本轮已观察到的测试结果
 
-本隔离执行环境中，**13/13 集成测试 + 10/10 原有设计断言通过**，新增针对提交后工作树污染、未跟踪文件、文件/测试符号链接的阻断回归用例。这不代表恶意代码安全审计、真实 Agent 接入成功，也不是竞品实测结果。
+本隔离执行环境中，**18/18 集成测试 + 10/10 原有设计断言通过**，新增针对提交后工作树污染、未跟踪文件、文件/测试符号链接的阻断回归用例。这不代表恶意代码安全审计、真实 Agent 接入成功，也不是竞品实测结果。
 
 ## 公开研究资料
 
-- [开发日志 0002：先修证据门控](docs/devlog/0002-proof-gates-before-agent-integration.zh-CN.md)：新增四个回归用例。
-- [竞品对照实验方案](docs/benchmark-plan.md)、[独立 WSL 实测手册](docs/competitor-runbook.md)：**尚未实际完成竞品运行**，当前环境无法访问 GitHub。
-- [命名核查](docs/naming-audit-2026-09-23.md)：TaskContinuum 同名冲突；最终产品名尚未决定。
+- [G3 Skill 安装与 WSL 试点](docs/skill-pilot.zh-CN.md)；[G3 公开开发记录](docs/devlog/0003-installable-project-skill.zh-CN.md)。
+
 - [首篇开发日志](docs/0000-why-we-are-building.md)：区分观察事实、待验证假设与宣传。
 - [Skill](skills/relay/SKILL.md)：教会具备本地 CLI 权限的 Agent 使用本工具；不是自动互联能力。
 - [产品路线](docs/roadmap-v0.1.md)：此前计划；实际完成程度以本 README 为准。
+
 
 **由 PZY Nexus 孵化**（仅用于说明来源；产品独立可运行，不依赖 Nexus）。
 ## G3：安装并试用项目级 Skill
