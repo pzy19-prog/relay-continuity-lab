@@ -53,12 +53,14 @@ export function list(store) {
   const p=path.join(store,'tasks');if(!fs.existsSync(p))return [];
   return fs.readdirSync(p).filter(x=>x.endsWith('.json')).map(x=>load(store,x.slice(0,-5))).sort((a,b)=>b.updated_at.localeCompare(a.updated_at));
 }
-export function create(store,{goal,repo,actor='local-executor',allowed=[],testFile='',constraints=[]}) {
+export function create(store,{id=null,goal,repo,actor='local-executor',allowed=[],testFile='',constraints=[]}) {
   req(typeof goal==='string'&&goal.trim(),'GOAL_REQUIRED');req(namePattern.test(actor),'INVALID_ACTOR');
   const root=verifyRepo(repo);const allowedPaths=[...new Set(allowed.map(goodPath))];req(allowedPaths.length,'ALLOWED_PATHS_REQUIRED');
   if(testFile) { repoFile(root,testFile); req(git(root,'ls-files','--error-unmatch','--',testFile)===testFile,'TEST_FILE_UNTRACKED'); }
-  const id='R-'+crypto.randomUUID().slice(0,8),base=git(root,'rev-parse','HEAD');
-  const task={schema:'relay-lab/v0',id,goal,repo:root,actor,allowed_paths:allowedPaths,test_file:testFile,constraints,
+  const taskId=id??('R-'+crypto.randomUUID().slice(0,8));req(namePattern.test(taskId),'INVALID_ID');
+  req(!fs.existsSync(taskPath(store,taskId)),'TASK_ID_EXISTS');
+  const base=git(root,'rev-parse','HEAD');
+  const task={schema:'relay-lab/v0',id:taskId,goal,repo:root,actor,allowed_paths:allowedPaths,test_file:testFile,constraints,
     base, state:'CREATED',owner:'human',next_action:'Generate explicit handoff',receipts:[],review:null,events:[],updated_at:''};
   emit(task,'TASK_CREATED',{base,actor,allowed_paths:allowedPaths});save(store,task);return task;
 }
