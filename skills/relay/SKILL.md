@@ -12,10 +12,11 @@ This Skill uses an installed local Relay CLI. It does **not** connect ChatGPT Ch
 Locate this SKILL.md and its sibling `scripts/relay.mjs`. **Run the sibling from its absolute path** with Node 22+ while your working directory is the authorized Git project. For example, if installed in `.agents/skills/relay-lab/`, use:
 
 ```bash
-node .agents/skills/relay-lab/scripts/relay.mjs --store /path/to/isolated/relay-store list
+node .agents/skills/relay-lab/scripts/relay.mjs show <task-id>
+node .agents/skills/relay-lab/scripts/relay.mjs resume <task-id>
 ```
 
-For global installations use the actual absolute skill directory (such as `~/.cursor/skills/relay-lab`). Keep the same `--store` across sessions. Use the project-specific store supplied by the user; never silently select another task's store.
+For a project-scoped install, the authorized project may contain a committed `.relay-lab.json` binding such as `{"schema":1,"id":"relay-continuity-lab/project-binding","store":"../relay-store"}`. The wrapper resolves that store automatically across sessions. If the binding is absent, it fails with `PROJECT_STORE_UNBOUND` instead of silently falling back to `~/.relay-lab-local`. Explicit `--store` or `RELAY_STORE` still overrides the binding.
 
 ## Workflow
 
