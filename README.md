@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2 completed one bounded manual real local-Agent handoff; automatic cross-surface transfer and G3 real Skill invocation remain unverified.**
+**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2 completed one bounded manual real local-Agent handoff; G3 completed one real project-Skill discovery/binding/execution/verification/resume loop; G4 Chat → Work → Codex explicit transport is now under test.**
 
 Relay Lab explores evidence-bound task continuity across specialized AI surfaces. This starter **actually implements** a local single-user Core, CLI, manual handoff packet, explicit receipt + independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, and a *read-only* thin Web timeline. It **does not** integrate automatically with ChatGPT Chat, Work, Codex, Claude, or Gemini. The automated demo fixture is synthetic; a separate user-observed G2 pilot completed one real local-Agent edit, independent verification, explicit human approval and a separate-process resume. G3 Skill use in a real host remains to be tested.
 
@@ -68,7 +68,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-In the isolated artifact container the packaged prototype passed **19 integration tests and 10 design assertions**. The four new regressions reject post-receipt dirty worktrees, untracked file changes, symlink replacement of evidence and symlink test inputs. Tests execute trusted local repository code, not an untrusted-code sandbox. The actual Chat/Work/Codex handoff and upstream competitor tests remain unverified.
+In the isolated artifact container the packaged prototype passed **19 integration tests and 10 design assertions**. The four new regressions reject post-receipt dirty worktrees, untracked file changes, symlink replacement of evidence and symlink test inputs. Tests execute trusted local repository code, not an untrusted-code sandbox. The latest user-observed WSL baseline before the G4 transport additions passed 21/21 Node tests plus 10/10 synthetic assertions. The new G4 transport code still requires a fresh WSL rerun. Actual three-surface Chat/Work/Codex continuity remains unverified.
 
 ## Research / public development
 
@@ -87,3 +87,7 @@ node scripts/skill-pilot-prepare.mjs
 ```
 
 This prepares a **new** isolated repository with a committed project-level `.agents/skills/relay-lab/` Skill and a generated `AGENT_TASK.md`. Open only that generated repo in Cursor WSL and ask an authorized Agent to discover **and actually invoke** the project Skill before performing the constrained calculator fix. After its commit, run `node scripts/skill-pilot-finish.mjs <pilot_dir>` back in the Relay source checkout. Explicit human approval is still mandatory. See [中文操作说明](docs/skill-pilot.zh-CN.md).
+
+## G4 — Chat → Work → Codex explicit transport
+
+G4 uses a dedicated GitHub Issue as a temporary, auditable transport. Chat publishes a sealed intent packet; Work emits a structured continuation draft; Chat validates/seals it; WSL then imports the packet chain and creates the same canonical task ID locally. See [G4 guide](docs/g4-chat-work-codex.md). This is not hidden-session synchronization or direct Work-to-WSL networking.
