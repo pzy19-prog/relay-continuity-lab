@@ -4,7 +4,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {load} from '../src/core.mjs';
-import {buildDemoReport,currentSurface,loadMetrics,recordMetric,recoveryFor,reportMarkdown,requiredHumanAction} from '../src/demo-state.mjs';
+import {buildDemoReport,currentSurface,loadMetrics,makePilotLauncher,recordMetric,recoveryFor,reportMarkdown,requiredHumanAction} from '../src/demo-state.mjs';
 
 const argv=process.argv.slice(2);
 const command=argv.shift();
@@ -14,28 +14,6 @@ const sourceRoot=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 const self=fileURLToPath(import.meta.url);
 const shq=s=>"'"+String(s).replace(/'/g,"'\\''")+"'";
 
-function ensureLauncher(pilotDir){
-  const launcher=path.join(pilotDir,'relay-demo');
-  const code=[
-    '#!/usr/bin/env node',
-    "import {spawnSync} from 'node:child_process';",
-    'const demo='+JSON.stringify(self)+';',
-    'const pilot='+JSON.stringify(path.resolve(pilotDir))+';',
-    'const argv=process.argv.slice(2);',
-    'const command=argv.shift();',
-    "if(!command){console.error('USAGE: relay-demo status|finish|approve|report ...');process.exit(1);}",
-    "const needsPilot=new Set(['status','finish','approve','report']);",
-    'const args=[demo,command];',
-    "if(needsPilot.has(command))args.push('--pilot',pilot);",
-    'args.push(...argv);',
-    "const r=spawnSync(process.execPath,args,{stdio:'inherit'});",
-    'process.exitCode=r.status??1;',
-    ''
-  ].join('\\n');
-  fs.writeFileSync(launcher,code,{mode:0o700});
-  fs.chmodSync(launcher,0o700);
-  return launcher;
-}
 
 function child(script,args=[]){
   const r=spawnSync(process.execPath,[new URL(script,import.meta.url).pathname,...args],{encoding:'utf8',timeout:60000});
@@ -82,7 +60,7 @@ try {
     const args=['--issue',issue,'--repo',repo];if(has('--publish-work'))args.push('--publish-work');
     const out=child('./g5-pilot-prepare.mjs',args);
     recordMetric(out.pilot_dir,{kind:'DEMO_COMMAND',command:'prepare'});
-    const launcher=ensureLauncher(out.pilot_dir);
+    const launcher=makePilotLauncher(out.pilot_dir,self);
     console.log(JSON.stringify({...out,
       demo_command:'prepare',
       launcher,
