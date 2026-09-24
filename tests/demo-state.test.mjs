@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {buildDemoReport,currentSurface,recordMetric,recoveryFor,reportMarkdown,requiredHumanAction} from '../src/demo-state.mjs';
+import {buildDemoReport,currentSurface,makePilotLauncher,recordMetric,recoveryFor,reportMarkdown,requiredHumanAction} from '../src/demo-state.mjs';
 
 const snapshot={packets:[
   {task_id:'R-G6-001',seq:1,packet_id:'chat-001',parent_packet_id:null,stage:'CHAT_INTENT',source_surface:'chat',target_surface:'work'},
@@ -45,4 +45,16 @@ test('demo metrics count real unified commands and sanitized report omits local 
   const md=reportMarkdown(report);
   assert.doesNotMatch(md,/\/tmp\/private/);
   assert.doesNotMatch(JSON.stringify(report),/\/tmp\/private/);
+});
+
+test('pilot-local relay-demo launcher works from an unrelated cwd and injects pilot path',t=>{
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'relay-g6-launcher-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+  const elsewhere=fs.mkdtempSync(path.join(os.tmpdir(),'relay-g6-cwd-'));t.after(()=>fs.rmSync(elsewhere,{recursive:true,force:true}));
+  const target=path.join(root,'target.mjs');
+  fs.writeFileSync(target,"console.log(JSON.stringify(process.argv.slice(2)));\n");
+  const launcher=makePilotLauncher(root,target);
+  const {spawnSync}=await import('node:child_process');
+  const r=spawnSync(launcher,['status'],{cwd:elsewhere,encoding:'utf8'});
+  assert.equal(r.status,0,r.stderr);
+  assert.deepEqual(JSON.parse(r.stdout),['status','--pilot',root]);
 });
