@@ -2,9 +2,9 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2 已完成真实本地 Agent 人工交接闭环；G3 已完成一次真实项目级 Skill 的发现、自动绑定、执行、独立验证与恢复闭环；G4 正在验证 Chat → Work → Codex 显式中转。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2 已完成真实本地 Agent 人工交接闭环；G3 已完成真实项目级 Skill 闭环；G4 已完成一次真实的显式 Chat → Work → Codex → Chat 连续性闭环；G5 正在减少人工 transport 步骤，并把跨端 packet lineage 显示到本地 UI。**
 
-Relay Lab 验证不同 AI 使用界面之间的任务连续性。本资料包现已实现：单用户本地 Core、CLI、人工交接 Packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、一份可安装的项目级 Skill（真实 Agent 调用待验证），以及**只读**的轻量 Web 时间线。**尚未自动连接** ChatGPT Chat、Work、Codex、Claude 或 Gemini。演示程序用模拟执行者和模拟人工审批，不能当作真实的跨 Agent 执行证据。
+Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper，以及可显示跨端 lineage 的**只读** Web UI。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。G4 已实测完成一次合成任务的 Chat → Work → Codex → Chat 显式闭环。
 
 > 待验证的产品假设：跨 AI 界面保留正确的任务状态、约束与证据，无需反复粘贴完整对话；遇到过期环境或证据不足时明确阻断。
 
@@ -93,8 +93,12 @@ node scripts/skill-pilot-prepare.mjs
 
 脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
 
-最近一次 G4 修改前的用户 WSL 基线为 **21/21 Node 测试 + 10/10 合成断言通过**；G4 新增 transport 代码仍待重新在 WSL 运行。G3 的真实 Skill 调用已经完成验收。
+最近一次用户 WSL 的 G4 基线为 **25/25 Node 测试 + 10/10 合成断言通过**；随后真实完成了一次保持 canonical task ID 的 Chat → Work → Codex → Chat 闭环，并经过独立验证、人工批准和批准后 resume。G5 新增的 adapter/UI 代码尚待新一轮 WSL 测试。
 
 ## G4：Chat → Work → Codex 显式中转
 
 G4 暂时使用专用 GitHub Issue 作为可审计 transport：Chat 发布封装后的意图包，Work 产生结构化 continuation draft，Chat 负责确定性校验和封装，WSL 再校验 packet chain 并以同一个 canonical task ID 创建本地 Relay 任务。详见 [G4 指南](docs/g4-chat-work-codex.md)。这不等于隐藏会话同步，也不是 Work 直接访问 WSL。
+
+## G5：减少人工 transport 步骤
+
+G5 新增本地 transport adapter：自动校验 Work draft、封装 `WORK_CONTINUATION`、可选择通过已认证的 `gh` 发布、把 transport snapshot 与 Relay state 一起保存，并在只读 UI 中显示完整 packet lineage。发布默认 dry-run，只有显式 `--publish-work` / `--publish-receipt` 才会写 GitHub。详见 [G5 指南](docs/g5-transport-ui.md)。
