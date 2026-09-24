@@ -11,7 +11,9 @@
     "ui": "node src/web.mjs",
     "test": "node --test tests/*.test.mjs && node benchmark/smoke.mjs",
     "transport": "node scripts/transport-adapter.mjs",
-    "demo": "node scripts/demo.mjs"
+    "demo": "node scripts/demo.mjs",
+    "service": "node src/service.mjs",
+    "service:query": "node scripts/service-query.mjs"
   },
   "license": "MIT"
 }
