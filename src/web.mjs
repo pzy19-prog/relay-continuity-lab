@@ -13,13 +13,14 @@ function renderTask(task){
   if(!task)return '';
   const events=(task.events||[]).map(e=>'<div class="event"><time>'+escape(e.at)+'</time><strong>'+escape(e.kind)+'</strong><pre>'+escape(JSON.stringify(e.detail,null,2))+'</pre></div>').join('');
   const control='<div class="control"><b>Data source:</b> '+escape(task.data_source)+'<br/><b>Current surface:</b> '+escape(task.current_surface)+'<br/><b>Required human action:</b> '+escape(task.required_human_action)+'</div>';
+  const provenance=task.provenance?'<div class="control"><b>Bound provenance:</b> '+escape(task.provenance.source?.repo)+'#'+escape(task.provenance.source?.issue)+'<br/><b>Packet:</b> '+escape(task.provenance.packet_id)+' / '+escape(task.provenance.content_sha256)+'<br/><b>Local base:</b> '+escape(task.provenance.local_base_commit)+'</div>':'';
   const transport='<h2>Cross-surface lineage</h2>'+(lineage(task.transport_lineage)||'<p>No transport lineage for this task.</p>');
-  return '<h2>'+escape(task.id)+' · '+escape(task.state)+'</h2><p>'+escape(task.goal)+'</p><p>Owner: <b>'+escape(task.owner)+'</b><br/>Next: <b>'+escape(task.next_action)+'</b></p><p>Independent checks: <code>'+escape(task.review?.status??'NOT_RUN')+'</code></p>'+control+transport+'<h2>Local task timeline</h2>'+(events||'<p>No events exposed.</p>');
+  return '<h2>'+escape(task.id)+' · '+escape(task.state)+'</h2><p>'+escape(task.goal)+'</p><p>Owner: <b>'+escape(task.owner)+'</b><br/>Next: <b>'+escape(task.next_action)+'</b></p><p>Independent checks: <code>'+escape(task.review?.status??'NOT_RUN')+'</code></p>'+control+provenance+transport+'<h2>Local task timeline</h2>'+(events||'<p>No events exposed.</p>');
 }
 
 function renderInbox(inbox){
   if(!inbox)return '';
-  return '<h2>Transport Inbox · '+escape(inbox.task_id)+'</h2><p><b>Status:</b> '+escape(inbox.status)+'<br/><b>Source:</b> '+escape(inbox.source?.repo)+'#'+escape(inbox.source?.issue)+'<br/><b>Last accepted:</b> '+escape(inbox.last_accepted?.packet_id)+' / '+escape(inbox.last_accepted?.content_sha256)+'</p><h2>Validated cloud lineage</h2>'+(lineage(inbox.transport_lineage)||'<p>No validated cloud lineage.</p>');
+  return '<h2>Transport Inbox · '+escape(inbox.task_id)+'</h2><p><b>Status:</b> '+escape(inbox.status)+'<br/><b>Source:</b> '+escape(inbox.source?.repo)+'#'+escape(inbox.source?.issue)+'<br/><b>Last accepted:</b> '+escape(inbox.last_accepted?.packet_id)+' / '+escape(inbox.last_accepted?.content_sha256)+'<br/><b>Local binding:</b> '+escape(inbox.binding?.status??'UNBOUND')+(inbox.binding?.task_state?' · '+escape(inbox.binding.task_state):'')+'</p><h2>Validated cloud lineage</h2>'+(lineage(inbox.transport_lineage)||'<p>No validated cloud lineage.</p>');
 }
 
 const server=http.createServer(async(req,res)=>{

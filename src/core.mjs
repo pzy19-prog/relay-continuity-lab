@@ -53,23 +53,24 @@ export function list(store) {
   const p=path.join(store,'tasks');if(!fs.existsSync(p))return [];
   return fs.readdirSync(p).filter(x=>x.endsWith('.json')).map(x=>load(store,x.slice(0,-5))).sort((a,b)=>b.updated_at.localeCompare(a.updated_at));
 }
-export function create(store,{id=null,goal,repo,actor='local-executor',allowed=[],testFile='',constraints=[]}) {
+export function create(store,{id=null,goal,repo,actor='local-executor',allowed=[],testFile='',constraints=[],provenance=null}) {
   req(typeof goal==='string'&&goal.trim(),'GOAL_REQUIRED');req(namePattern.test(actor),'INVALID_ACTOR');
   const root=verifyRepo(repo);const allowedPaths=[...new Set(allowed.map(goodPath))];req(allowedPaths.length,'ALLOWED_PATHS_REQUIRED');
   if(testFile) { repoFile(root,testFile); req(git(root,'ls-files','--error-unmatch','--',testFile)===testFile,'TEST_FILE_UNTRACKED'); }
   const taskId=id??('R-'+crypto.randomUUID().slice(0,8));req(namePattern.test(taskId),'INVALID_ID');
   req(!fs.existsSync(taskPath(store,taskId)),'TASK_ID_EXISTS');
   const base=git(root,'rev-parse','HEAD');
+  if(provenance!==null)req(typeof provenance==='object'&&!Array.isArray(provenance),'PROVENANCE_INVALID');
   const task={schema:'relay-lab/v0',id:taskId,goal,repo:root,actor,allowed_paths:allowedPaths,test_file:testFile,constraints,
-    base, state:'CREATED',owner:'human',next_action:'Generate explicit handoff',receipts:[],review:null,events:[],updated_at:''};
-  emit(task,'TASK_CREATED',{base,actor,allowed_paths:allowedPaths});save(store,task);return task;
+    base, provenance:provenance??null, state:'CREATED',owner:'human',next_action:'Generate explicit handoff',receipts:[],review:null,events:[],updated_at:''};
+  emit(task,'TASK_CREATED',{base,actor,allowed_paths:allowedPaths,provenance:task.provenance});save(store,task);return task;
 }
 export function handoff(store,id) {
   const t=load(store,id);req(t.state==='CREATED','HANDOFF_STATE_INVALID');
   req(git(t.repo,'rev-parse','HEAD')===t.base,'BASE_DRIFT');
   t.state='HANDED_OFF';t.owner=t.actor;t.next_action='Executor works; return a structured receipt';
   emit(t,'HANDOFF_CREATED',{actor:t.actor,base:t.base});save(store,t);
-  return {schema:'relay-lab/handoff-v0',task_id:t.id,goal:t.goal,source_actor:'human',target_actor:t.actor,base_commit:t.base,repo_local:t.repo,
+  return {schema:'relay-lab/handoff-v0',task_id:t.id,goal:t.goal,source_actor:'human',target_actor:t.actor,base_commit:t.base,provenance:t.provenance??null,repo_local:t.repo,
     allowed_paths:t.allowed_paths,constraints:t.constraints,test_command:t.test_file?`node --test ${t.test_file}`:null,
     return_receipt:{receipt_id:'uuid/string',actor:t.actor,base_commit:t.base,head_commit:'git HEAD',status:'PASS | FAIL | UNKNOWN',evidence:[{kind:'file_hash',path:'...',sha256:'...'}]}};
 }
@@ -136,6 +137,6 @@ export function resume(store,id) {
     expected_head:t.receipts[0]?.head_commit??t.base,
     environment_match:head===(t.receipts[0]?.head_commit??t.base) && git(t.repo,'status','--porcelain','--untracked-files=all').length===0,
     worktree_clean:git(t.repo,'status','--porcelain','--untracked-files=all').length===0,
-    receipt_id:t.receipts[0]?.receipt_id??null,independent_review:t.review??null,
+    receipt_id:t.receipts[0]?.receipt_id??null,independent_review:t.review??null,provenance:t.provenance??null,
     notice:'Manual transfer only. This packet is not automatically injected into a Chat/Work/Codex session.'};
 }

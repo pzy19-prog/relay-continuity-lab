@@ -14,7 +14,9 @@
     "demo": "node scripts/demo.mjs",
     "service": "node src/service.mjs",
     "service:query": "node scripts/service-query.mjs",
-    "sync": "node scripts/transport-sync.mjs"
+    "sync": "node scripts/transport-sync.mjs",
+    "bind": "node scripts/transport-bind.mjs",
+    "g10:prepare": "node scripts/g10-pilot-prepare.mjs"
   },
   "license": "MIT"
 }

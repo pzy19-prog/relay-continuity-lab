@@ -28,7 +28,7 @@ function normalizeDirect(task,store){
   const snap=snapshot(store,task.id);
   return {
     id:task.id,goal:task.goal,state:task.state,owner:task.owner,next_action:task.next_action,
-    allowed_paths:task.allowed_paths,constraints:task.constraints,review:task.review,
+    allowed_paths:task.allowed_paths,constraints:task.constraints,provenance:task.provenance??null,review:task.review,
     current_surface:currentSurface(task,snap),required_human_action:requiredHumanAction(task,snap),
     transport_lineage:directLineage(snap),events:task.events||[],data_source:'direct-store'
   };
@@ -37,7 +37,7 @@ function normalizeDirect(task,store){
 function normalizeService(task){
   return {
     id:task.task_id,goal:task.goal,state:task.state,owner:task.owner,next_action:task.next_action,
-    allowed_paths:task.allowed_paths,constraints:task.constraints,review:task.review,
+    allowed_paths:task.allowed_paths,constraints:task.constraints,provenance:task.provenance??null,review:task.review,
     current_surface:task.current_surface,required_human_action:task.required_human_action,
     transport_lineage:task.transport_lineage||[],events:task.events||[],data_source:'service-v1'
   };

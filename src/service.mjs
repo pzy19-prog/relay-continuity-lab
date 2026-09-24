@@ -38,6 +38,7 @@ function taskView(store,task){
     allowed_paths:task.allowed_paths,
     constraints:task.constraints,
     base:task.base,
+    provenance:task.provenance??null,
     review:task.review,
     receipt:task.receipts?.[0]?{
       receipt_id:task.receipts[0].receipt_id,
@@ -51,7 +52,18 @@ function taskView(store,task){
   };
 }
 
-function inboxView(record){return {schema:'relay-lab/service-inbox-v1',source:record.source,task_id:record.task_id,status:record.status,last_accepted:record.last_accepted,transport_lineage:lineage({packets:record.packets})};}
+function inboxBinding(store,record){
+  const task=list(store).find(t=>t.id===record.task_id);
+  if(!task)return {status:'UNBOUND'};
+  const p=task.provenance;
+  const same=p?.schema==='relay-lab/transport-binding-v0' &&
+    p.source?.repo===record.source.repo &&
+    p.source?.issue===record.source.issue &&
+    p.packet_id===record.last_accepted.packet_id &&
+    p.content_sha256===record.last_accepted.content_sha256;
+  return same?{status:'BOUND',task_id:task.id,task_state:task.state,local_base_commit:task.base}:{status:'CONFLICTING_LOCAL_TASK',task_id:task.id,task_state:task.state};
+}
+function inboxView(store,record){return {schema:'relay-lab/service-inbox-v1',source:record.source,task_id:record.task_id,status:record.status,last_accepted:record.last_accepted,binding:inboxBinding(store,record),transport_lineage:lineage({packets:record.packets})};}
 
 function json(res,status,payload){
   res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});
@@ -77,13 +89,13 @@ export function createRelayService({store=defaultStore}={}){
         return;
       }
       if(url.pathname==='/v1/transport-inbox'){
-        json(res,200,{schema:'relay-lab/service-inbox-list-v1',items:readTransportInbox(store).map(inboxView)});
+        json(res,200,{schema:'relay-lab/service-inbox-list-v1',items:readTransportInbox(store).map(r=>inboxView(store,r))});
         return;
       }
       const inbox=/^\/v1\/transport-inbox\/([^/]+)$/.exec(url.pathname);
       if(inbox){
         const id=decodeURIComponent(inbox[1]);
-        json(res,200,inboxView(loadTransportInboxTask(store,id)));
+        json(res,200,inboxView(store,loadTransportInboxTask(store,id)));
         return;
       }
       if(url.pathname==='/v1/tasks'){
