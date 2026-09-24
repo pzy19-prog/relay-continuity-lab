@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {seal,renderPacket} from '../src/transport.mjs';
+import {publishPacketFile,saveSnapshot} from '../src/github-transport.mjs';
+
+const args=process.argv.slice(2);
+const home=args[0];if(!home)throw new Error('Usage: g5-pilot-finish.mjs <pilot-dir> [--publish-receipt]');
+const publish=args.includes('--publish-receipt');
+const p=JSON.parse(fs.readFileSync(path.join(home,'pilot.json'),'utf8'));
+const git=(...a)=>{const r=spawnSync('git',['-C',p.repo,...a],{encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr);return r.stdout.trim();};
+const cli=(...a)=>{const r=spawnSync(process.execPath,[p.entry,'--store',p.store,...a],{encoding:'utf8'});if(r.status!==0)throw new Error(r.stderr||r.stdout);return JSON.parse(r.stdout);};
+const task=cli('show',p.task_id),head=git('rev-parse','HEAD');
+if(head===task.base)throw new Error('AGENT_COMMIT_MISSING');if(git('status','--porcelain','--untracked-files=all'))throw new Error('DIRTY_WORKTREE');
+const changed=git('diff','--name-only',task.base,head).split('\n').filter(Boolean);if(changed.length!==1||changed[0]!=='calc.mjs')throw new Error('OUT_OF_SCOPE');
+const sha=crypto.createHash('sha256').update(fs.readFileSync(path.join(p.repo,'calc.mjs'))).digest('hex');
+const receipt={receipt_id:'g5-'+p.task_id,task_id:p.task_id,actor:'local-agent',base_commit:task.base,head_commit:head,status:'PASS',evidence:[{kind:'file_hash',path:'calc.mjs',sha256:sha}]};
+const rf=path.join(home,'candidate-receipt.json');fs.writeFileSync(rf,JSON.stringify(receipt,null,2)+'\n',{mode:0o600});
+cli('receipt',p.task_id,'--file',rf);const checked=cli('verify',p.task_id),cp=cli('resume',p.task_id);
+if(checked.state!=='VERIFIED_PENDING_DECISION'||!cp.environment_match)throw new Error('LOCAL_VERIFY_FAILED');
+const packet=seal({schema:'relay-lab/transport-v0',task_id:p.task_id,packet_id:'codex-receipt-001',seq:p.transport_seq+1,parent_packet_id:p.transport_parent,stage:'EXECUTION_RECEIPT',source_surface:'codex',target_surface:'chat',authority:{scope_change:'human_only',final_approval:'human'},payload:{head_commit:head,changed_files:changed,review_status:checked.review.status,environment_match:true,receipt_id:receipt.receipt_id}});
+const out=path.join(home,'github-receipt-comment.md');fs.writeFileSync(out,renderPacket(packet)+'\n',{mode:0o600});
+const prior=JSON.parse(fs.readFileSync(p.snapshot,'utf8')).packets;saveSnapshot(p.store,{repo:p.transport_repo,issue:p.issue,packets:[...prior,packet]});
+const pub=publishPacketFile({repo:p.transport_repo,issue:p.issue,file:out,publish});
+console.log(JSON.stringify({state:checked.state,environment_match:true,transport_packet:packet,transport_snapshot:p.snapshot,publish:pub,next:pub.published?'Return to Chat for receipt review, then human decide':'rerun with --publish-receipt after reviewing packet'},null,2));
