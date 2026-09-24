@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G8 已验收；G8 已证明 Web UI 与项目 Skill 可以通过 Service v1 查看同一个 Relay task，不需要项目 store binding、直接 JSON 读取或 `--store`。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G9 已验收；G9 已证明一个受限的 Chat→Work GitHub transport chain 可以被本地 worker 自动发现、校验、seal 并镜像到 Transport Inbox，再通过 Service/UI 展示，无需手工 transport import，也不会隐式创建本地 coding task。**
 
 Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper、可显示跨端 lineage 的**只读** Web UI，以及 loopback-only 的只读/状态 Relay Service API。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。
 
@@ -93,7 +93,7 @@ node scripts/skill-pilot-prepare.mjs
 
 脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
 
-最近一次用户 WSL 的 G8 基线为 **36/36 Node 测试 + 10/10 smoke assertions 通过**。fresh G8 task 同时由 service-backed Web UI 与真实 Luna/Cursor Skill 通过 Service v1 查看，`PROJECT_BINDING_PRESENT=false`，Skill 未使用 `--store`，未直接读取 JSON，未修改文件、未创建 commit；Service 重启前后无状态漂移。
+最近一次用户 WSL 的 G9 基线为 **40/40 Node 测试 + 10/10 smoke assertions 通过**。fresh public-safe GitHub pilot 自动从 `chat-001` 扩展到 `work-001` 并进入 Transport Inbox；重复 sync 与 worker restart 均保持幂等，Service/UI 显示相同 validated cloud lineage，同时没有创建本地 coding task。
 
 ## G4：Chat → Work → Codex 显式中转
 
@@ -114,3 +114,7 @@ G7 已实测 loopback-only（`127.0.0.1`）只读/状态 API，包括 `health`�
 ## G8：Service-backed 本地适配器
 
 G8 已验收。Web UI 可通过 `RELAY_SERVICE_URL=http://127.0.0.1:4318` 运行，并明确显示 `Data source: service-v1`；项目 Skill 的只读命令 `service-health`、`service-show`、`service-checkpoint` 通过同一个 Service Contract 工作，不需要 `.relay-lab.json` 或 `--store`。fresh Luna pilot 在 Service 重启前后均看到同一个 `R-G8-SERVICE-ADAPTER-001` 与 `chat-001 -> work-001` lineage，没有直接 JSON 读取或状态变更。详见 [G8 指南](docs/g8-service-backed-adapters.md)。
+
+## G9：受限 GitHub transport sync worker
+
+G9 已验收。本地 authenticated-`gh api` worker 可监控一个明确配置的 GitHub repo/Issue，校验 packet hash、lineage 与 public-safety，确定性 seal 唯一合法 Work draft，并把已接受链路镜像到独立 Transport Inbox。fresh pilot 达到 `chat-001 -> work-001`，重复 sync 与 worker restart 均幂等，同时 `Task Inbox` 保持为空。service-backed UI 人工可见验证了 `VALIDATED`、来源 Issue #13、`Last: work-001 · seq 2` 以及两段 validated cloud lineage。全程没有手工 transport-import、没有本地代码执行、没有 receipt/verify/decide，也没有自动批准。详见 [G9 指南](docs/g9-transport-sync-worker.md)。
