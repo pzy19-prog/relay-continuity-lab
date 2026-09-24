@@ -4,8 +4,22 @@ import {loadUiTask,loadUiTasks,loadUiInbox,loadUiInboxItem,uiDataMode} from './u
 
 const port=Number(process.env.RELAY_PORT||4317);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 function lineage(items=[]){
   return items.map(p=>'<div class="packet"><div><b>#'+escape(p.seq)+' '+escape(p.stage)+'</b> <span class="badge">'+escape(p.from)+' -> '+escape(p.to)+'</span></div><small>'+escape(p.packet_id)+' · parent '+escape(p.parent_packet_id??'ROOT')+'</small>'+(p.review_status?'<div>Evidence: <code>'+escape(p.review_status)+'</code></div>':'')+'</div>').join('');
+}
+
+function renderTask(task){
+  if(!task)return '';
+  const events=(task.events||[]).map(e=>'<div class="event"><time>'+escape(e.at)+'</time><strong>'+escape(e.kind)+'</strong><pre>'+escape(JSON.stringify(e.detail,null,2))+'</pre></div>').join('');
+  const control='<div class="control"><b>Data source:</b> '+escape(task.data_source)+'<br/><b>Current surface:</b> '+escape(task.current_surface)+'<br/><b>Required human action:</b> '+escape(task.required_human_action)+'</div>';
+  const transport='<h2>Cross-surface lineage</h2>'+(lineage(task.transport_lineage)||'<p>No transport lineage for this task.</p>');
+  return '<h2>'+escape(task.id)+' · '+escape(task.state)+'</h2><p>'+escape(task.goal)+'</p><p>Owner: <b>'+escape(task.owner)+'</b><br/>Next: <b>'+escape(task.next_action)+'</b></p><p>Independent checks: <code>'+escape(task.review?.status??'NOT_RUN')+'</code></p>'+control+transport+'<h2>Local task timeline</h2>'+(events||'<p>No events exposed.</p>');
+}
+
+function renderInbox(inbox){
+  if(!inbox)return '';
+  return '<h2>Transport Inbox · '+escape(inbox.task_id)+'</h2><p><b>Status:</b> '+escape(inbox.status)+'<br/><b>Source:</b> '+escape(inbox.source?.repo)+'#'+escape(inbox.source?.issue)+'<br/><b>Last accepted:</b> '+escape(inbox.last_accepted?.packet_id)+' / '+escape(inbox.last_accepted?.content_sha256)+'</p><h2>Validated cloud lineage</h2>'+(lineage(inbox.transport_lineage)||'<p>No validated cloud lineage.</p>');
 }
 
 const server=http.createServer(async(req,res)=>{
@@ -13,6 +27,7 @@ const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost');
     const tasks=await loadUiTasks();
     const inboxItems=await loadUiInbox();
+
     if(url.pathname==='/api/tasks'){
       res.writeHead(200,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});
       res.end(JSON.stringify(tasks));return;
@@ -23,18 +38,22 @@ const server=http.createServer(async(req,res)=>{
       res.writeHead(200,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});
       res.end(JSON.stringify(t));return;
     }
+    if(url.pathname==='/api/transport-inbox'){
+      res.writeHead(200,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});
+      res.end(JSON.stringify(inboxItems));return;
+    }
     if(url.pathname!=='/'){res.writeHead(404);res.end('Not found');return;}
+
     const selected=url.searchParams.get('task');
     const selectedInbox=url.searchParams.get('inbox');
     const task=selected?await loadUiTask(selected):null;
     const inbox=selectedInbox?await loadUiInboxItem(selectedInbox):null;
+
     const row=t=>'<a class="row" href="/?task='+encodeURIComponent(t.id)+'"><b>'+escape(t.id)+'</b> <span class="badge">'+escape(t.state)+'</span><div>'+escape(t.goal)+'</div><small>Owner: '+escape(t.owner)+' · Next: '+escape(t.next_action)+'</small></a>';
     const inboxRow=x=>'<a class="row" href="/?inbox='+encodeURIComponent(x.task_id)+'"><b>'+escape(x.task_id)+'</b> <span class="badge">'+escape(x.status)+'</span><div>'+escape(x.source?.repo)+'#'+escape(x.source?.issue)+'</div><small>Last: '+escape(x.last_accepted?.packet_id)+' · seq '+escape(x.last_accepted?.seq)+'</small></a>';
-    const events=task?task.events.map(e=>'<div class="event"><time>'+escape(e.at)+'</time><strong>'+escape(e.kind)+'</strong><pre>'+escape(JSON.stringify(e.detail,null,2))+'</pre></div>').join(''):'';
-    const controlBlock=task?'<div class="control"><b>Data source:</b> '+escape(task.data_source)+'<br/><b>Current surface:</b> '+escape(task.current_surface)+'<br/><b>Required human action:</b> '+escape(task.required_human_action)+'</div>':'';
-    const transportBlock=task?'<h2>Cross-surface lineage</h2>'+(lineage(task.transport_lineage)||'<p>No transport lineage for this task.</p>'):'';
-    const inboxDetail=inbox?'<h2>Transport Inbox · '+escape(inbox.task_id)+'</h2><p><b>Status:</b> '+escape(inbox.status)+'<br/><b>Source:</b> '+escape(inbox.source?.repo)+'#'+escape(inbox.source?.issue)+'<br/><b>Last accepted:</b> '+escape(inbox.last_accepted?.packet_id)+' / '+escape(inbox.last_accepted?.content_sha256)+'</p><h2>Validated cloud lineage</h2>'+lineage(inbox.transport_lineage):'';
-    const html='<!doctype html><html lang="en"><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Relay Lab</title><style>:root{font-family:ui-sans-serif,system-ui;background:#0b1120;color:#e9f0ff}body{margin:0}header{padding:24px 32px;background:#16243a}header p{color:#a5b7c9}.wrap{max-width:1300px;margin:auto;padding:24px;display:grid;grid-template-columns:350px 1fr;gap:22px}.panel{background:#152237;border:1px solid #2a3d51;border-radius:12px;padding:20px}a{color:#8ddde5;text-decoration:none}.row{display:block;border:1px solid #364e60;padding:14px;border-radius:9px;margin-bottom:12px}.badge{font-size:12px;padding:3px 7px;border-radius:10px;background:#244f4d;color:#b4fff2}small,time{color:#9cacbd;display:block;margin-top:5px}pre{white-space:pre-wrap;word-break:break-word;color:#d0e2fc;background:#0c1727;padding:12px;border-radius:8px}.event{border-left:2px solid #4eb4ad;padding:7px 16px;margin:14px 0}.packet{border:1px solid #36526a;background:#101d2d;border-radius:9px;padding:12px;margin:10px 0}.control{border:1px solid #55708a;background:#0e1a29;border-radius:9px;padding:12px;margin:14px 0}.warn{color:#ffd2a8}code{color:#b4fff2}@media(max-width:850px){.wrap{display:block;padding:12px}.panel{margin-bottom:14px}}</style><header><h1>Relay Lab</h1><p>Local-first · explicit transport · human approval · pre-alpha · '+escape(uiDataMode())+'</p></header><main class="wrap"><section class="panel"><h2>Task Inbox ('+tasks.length+')</h2>'+(tasks.map(row).join('')||'No tasks.')+'</section><section class="panel">'+(task?'<h2>'+escape(task.id)+' · '+escape(task.state)+'</h2><p>'+escape(task.goal)+'</p><p>Owner: <b>'+escape(task.owner)+'</b><br/>Next: <b>'+escape(task.next_action)+'</b></p><p>Independent checks: <code>'+escape(task.review?.status??'NOT_RUN')+'</code></p>'+controlBlock+transportBlock+'<h2>Local task timeline</h2>'+(events||'<p>No events exposed.</p>'):'<h2>Select a task or transport inbox item</h2>'))+'</section></main></html>';
+    const detail=inbox?renderInbox(inbox):(task?renderTask(task):'<h2>Select a task or transport inbox item</h2>');
+
+    const html='<!doctype html><html lang="en"><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Relay Lab</title><style>:root{font-family:ui-sans-serif,system-ui;background:#0b1120;color:#e9f0ff}body{margin:0}header{padding:24px 32px;background:#16243a}header p{color:#a5b7c9}.wrap{max-width:1300px;margin:auto;padding:24px;display:grid;grid-template-columns:350px 1fr;gap:22px}.panel{background:#152237;border:1px solid #2a3d51;border-radius:12px;padding:20px}a{color:#8ddde5;text-decoration:none}.row{display:block;border:1px solid #364e60;padding:14px;border-radius:9px;margin-bottom:12px}.badge{font-size:12px;padding:3px 7px;border-radius:10px;background:#244f4d;color:#b4fff2}small,time{color:#9cacbd;display:block;margin-top:5px}pre{white-space:pre-wrap;word-break:break-word;color:#d0e2fc;background:#0c1727;padding:12px;border-radius:8px}.event{border-left:2px solid #4eb4ad;padding:7px 16px;margin:14px 0}.packet{border:1px solid #36526a;background:#101d2d;border-radius:9px;padding:12px;margin:10px 0}.control{border:1px solid #55708a;background:#0e1a29;border-radius:9px;padding:12px;margin:14px 0}.warn{color:#ffd2a8}code{color:#b4fff2}@media(max-width:850px){.wrap{display:block;padding:12px}.panel{margin-bottom:14px}}</style><header><h1>Relay Lab</h1><p>Local-first · explicit transport · human approval · pre-alpha · '+escape(uiDataMode())+'</p></header><main class="wrap"><section class="panel"><h2>Task Inbox ('+tasks.length+')</h2>'+(tasks.map(row).join('')||'No tasks.')+'<h2>Transport Inbox ('+inboxItems.length+')</h2>'+(inboxItems.map(inboxRow).join('')||'No synced transport.')+'</section><section class="panel">'+detail+'</section></main></html>';
     res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store','content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"});
     res.end(html);
   }catch(e){
