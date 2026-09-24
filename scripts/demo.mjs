@@ -40,7 +40,7 @@ function snapshot(p){
 }
 
 function statusPayload(root,p){
-  const task=load(p.store,p.task_id),snap=snapshot(p);
+  const task=load(p.store,p.task_id),snap=snapshot(p),launcher=makePilotLauncher(root,self);
   return {
     task_id:task.id,state:task.state,owner:task.owner,
     current_surface:currentSurface(task,snap),
@@ -49,6 +49,9 @@ function statusPayload(root,p){
     packet_lineage:(snap?.packets||[]).map(x=>({seq:x.seq,packet_id:x.packet_id,stage:x.stage,from:x.source_surface,to:x.target_surface,parent:x.parent_packet_id})),
     ui_url:'http://127.0.0.1:4317/?task='+encodeURIComponent(task.id),
     ui_command:'cd '+shq(sourceRoot)+' && RELAY_STORE='+shq(p.store)+' npm run ui',
+    launcher,
+    status_command:shq(launcher)+' status',
+    finish_command:shq(launcher)+' finish --publish-receipt',
     measured_demo_commands:loadMetrics(root).events.filter(e=>e.kind==='DEMO_COMMAND').length
   };
 }
