@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {spawnSync} from 'node:child_process';
 import {buildDemoReport,currentSurface,makePilotLauncher,recordMetric,recoveryFor,reportMarkdown,requiredHumanAction} from '../src/demo-state.mjs';
 
 const snapshot={packets:[
@@ -53,7 +54,6 @@ test('pilot-local relay-demo launcher works from an unrelated cwd and injects pi
   const target=path.join(root,'target.mjs');
   fs.writeFileSync(target,"console.log(JSON.stringify(process.argv.slice(2)));\n");
   const launcher=makePilotLauncher(root,target);
-  const {spawnSync}=await import('node:child_process');
   const r=spawnSync(launcher,['status'],{cwd:elsewhere,encoding:'utf8'});
   assert.equal(r.status,0,r.stderr);
   assert.deepEqual(JSON.parse(r.stdout),['status','--pilot',root]);
