@@ -107,3 +107,26 @@ export function reportMarkdown(report){
   lines.push('', '## Scope','', `- Allowed paths: ${report.allowed_paths.map(x=>'`'+x+'`').join(', ')}`, `- Receipt: \`${report.receipt_id??'NONE'}\``, `- Head: \`${report.head_commit??'NONE'}\``, '', '> Sanitized report: local absolute paths, tokens and store locations are intentionally omitted.','');
   return lines.join('\n');
 }
+
+export function makePilotLauncher(pilotDir,demoScript){
+  const launcher=path.join(path.resolve(pilotDir),'relay-demo');
+  const code=[
+    '#!/usr/bin/env node',
+    "import {spawnSync} from 'node:child_process';",
+    'const demo='+JSON.stringify(path.resolve(demoScript))+';',
+    'const pilot='+JSON.stringify(path.resolve(pilotDir))+';',
+    'const argv=process.argv.slice(2);',
+    'const command=argv.shift();',
+    "if(!command){console.error('USAGE: relay-demo status|finish|approve|report ...');process.exit(1);}",
+    "const needsPilot=new Set(['status','finish','approve','report']);",
+    'const args=[demo,command];',
+    "if(needsPilot.has(command))args.push('--pilot',pilot);",
+    'args.push(...argv);',
+    "const r=spawnSync(process.execPath,args,{stdio:'inherit'});",
+    'process.exitCode=r.status??1;',
+    ''
+  ].join('\n');
+  fs.writeFileSync(launcher,code,{mode:0o700});
+  fs.chmodSync(launcher,0o700);
+  return launcher;
+}
