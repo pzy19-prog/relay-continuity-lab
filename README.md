@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2 completed one bounded manual real local-Agent handoff; G3 completed one real project-Skill discovery/binding/execution/verification/resume loop; G4 completed one real explicit Chat → Work → Codex → Chat continuity loop; G5 is reducing manual transport steps and exposing packet lineage in the local UI.**
+**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2 completed one bounded manual real local-Agent handoff; G3 completed one real project-Skill discovery/binding/execution/verification/resume loop; G4 completed one real explicit Chat → Work → Codex → Chat continuity loop; G5 completed a reduced-manual transport loop with guarded GitHub publishing and visible cross-surface lineage in the local UI.**
 
 Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, and a *read-only* Web timeline that can render cross-surface lineage. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control. G4 demonstrated one real synthetic Chat → Work → Codex → Chat loop through explicit GitHub transport and human approval.
 
@@ -94,4 +94,4 @@ G4 uses a dedicated GitHub Issue as a temporary, auditable transport. Chat publi
 
 ## G5 — reduce manual transport steps
 
-G5 adds a local transport adapter that validates Work drafts, seals `WORK_CONTINUATION`, optionally publishes through authenticated `gh`, stores a transport snapshot beside Relay state, and renders the packet lineage in the read-only UI. Publishing remains dry-run by default; `--publish-work` / `--publish-receipt` are explicit actions. See [G5 guide](docs/g5-transport-ui.md).
+G5 added and validated a local transport adapter that checks Work drafts, seals `WORK_CONTINUATION`, publishes only with explicit authenticated `gh` flags, stores a transport snapshot beside Relay state, and renders the packet lineage in the read-only UI. One real synthetic G5 run completed through human approval and post-decision resume. See [G5 guide](docs/g5-transport-ui.md).
