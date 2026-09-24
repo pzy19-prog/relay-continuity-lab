@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G7 已完成逐步增强的本地与跨界面连续性实验；G7 已实测 loopback-only 的只读/状态 Relay Service API，并验证同一 G6 store 在服务停止/重启后仍保持相同 task、checkpoint 与 lineage。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G8 已验收；G8 已证明 Web UI 与项目 Skill 可以通过 Service v1 查看同一个 Relay task，不需要项目 store binding、直接 JSON 读取或 `--store`。**
 
 Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper、可显示跨端 lineage 的**只读** Web UI，以及 loopback-only 的只读/状态 Relay Service API。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。
 
@@ -93,7 +93,7 @@ node scripts/skill-pilot-prepare.mjs
 
 脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
 
-最近一次用户 WSL 的 G7 基线为 **35/35 Node 测试 + 10/10 合成断言通过**。Service 在 `127.0.0.1:4318` 启动，无需迁移即可读取已验收 G6 store；停止并重新启动后，task ID、`COMPLETED` 状态、owner、head、`environment_match=true`、`worktree_clean=true` 和三段 transport lineage 均保持一致。
+最近一次用户 WSL 的 G8 基线为 **36/36 Node 测试 + 10/10 smoke assertions 通过**。fresh G8 task 同时由 service-backed Web UI 与真实 Luna/Cursor Skill 通过 Service v1 查看，`PROJECT_BINDING_PRESENT=false`，Skill 未使用 `--store`，未直接读取 JSON，未修改文件、未创建 commit；Service 重启前后无状态漂移。
 
 ## G4：Chat → Work → Codex 显式中转
 
@@ -110,3 +110,7 @@ G6 已实测 `npm run demo -- ...` 与 pilot-local `relay-demo` launcher，统�
 ## G7：本地 Relay Service/API
 
 G7 已实测 loopback-only（`127.0.0.1`）只读/状态 API，包括 `health`、task detail 和 checkpoint。已验收 G6 JSON store 无需迁移即可直接服务；真实 WSL 停止/重启后，task ID、`COMPLETED` 状态、owner、head、`environment_match=true`、`worktree_clean=true` 以及完整 `CHAT_INTENT → WORK_CONTINUATION → EXECUTION_RECEIPT` lineage 均保持一致。该 Service 明确不开放远程 bind、CORS、cloud tunnel、provider credentials，也不允许 service-side 自动审批。详见 [G7 指南](docs/g7-local-service.md)。
+
+## G8：Service-backed 本地适配器
+
+G8 已验收。Web UI 可通过 `RELAY_SERVICE_URL=http://127.0.0.1:4318` 运行，并明确显示 `Data source: service-v1`；项目 Skill 的只读命令 `service-health`、`service-show`、`service-checkpoint` 通过同一个 Service Contract 工作，不需要 `.relay-lab.json` 或 `--store`。fresh Luna pilot 在 Service 重启前后均看到同一个 `R-G8-SERVICE-ADAPTER-001` 与 `chat-001 -> work-001` lineage，没有直接 JSON 读取或状态变更。详见 [G8 指南](docs/g8-service-backed-adapters.md)。

@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G7 have completed progressively stronger local/cross-surface continuity pilots. G7 validated a loopback-only, read/status Relay Service API against the accepted G6 store, including stop/restart durability with unchanged task/checkpoint/lineage.**
+**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G8 are accepted. G8 proved that the Web UI and project Skill can inspect the same Relay task through Service v1 without a project store binding, direct JSON reads or `--store`.**
 
 Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, a *read-only* Web timeline, and a loopback-only read/status Relay Service API. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control.
 
@@ -68,7 +68,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-The latest user-observed G7 WSL baseline passed **35/35 Node tests + 10/10 synthetic assertions**. The service started on `127.0.0.1:4318`, served the accepted G6 task without store migration, returned the same completed checkpoint and three-stage lineage, then reproduced the same values after stop/restart. Tests execute trusted local repository code, not an untrusted-code sandbox.
+The latest user-observed G8 WSL baseline passed **36/36 Node tests + 10/10 smoke assertions**. A fresh G8 task was inspected by both the service-backed Web UI and a real local Luna/Cursor Skill through Service v1 with `PROJECT_BINDING_PRESENT=false`, no `--store`, no direct JSON reads, no file changes and no commits. Service restart caused no state drift. Tests execute trusted local repository code, not an untrusted-code sandbox.
 
 ## Research / public development
 
@@ -103,3 +103,7 @@ G6 validated `npm run demo -- ...` plus a pilot-local `relay-demo` launcher as t
 ## G7 — local Relay Service/API
 
 G7 validated a loopback-only (`127.0.0.1`) read/status API with `health`, task detail and checkpoint endpoints. The accepted G6 JSON store required no migration. A real WSL stop/restart preserved task ID, `COMPLETED` state, owner, head, `environment_match=true`, `worktree_clean=true`, and the full `CHAT_INTENT → WORK_CONTINUATION → EXECUTION_RECEIPT` lineage. The service intentionally has no remote bind, CORS, cloud tunnel, provider credentials or service-side approval. See [G7 guide](docs/g7-local-service.md).
+
+## G8 — service-backed local adapters
+
+G8 is accepted. The Web UI can run with `RELAY_SERVICE_URL=http://127.0.0.1:4318` and visibly reports `Data source: service-v1`; project Skill read commands `service-health`, `service-show`, and `service-checkpoint` use the same Service Contract without requiring `.relay-lab.json` or `--store`. A fresh Luna pilot observed the same `R-G8-SERVICE-ADAPTER-001` task and `chat-001 -> work-001` lineage before and after Service restart, with no direct JSON reads or state changes. See [G8 guide](docs/g8-service-backed-adapters.md).
