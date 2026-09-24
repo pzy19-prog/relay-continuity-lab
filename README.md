@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G5 have completed progressively stronger local/cross-surface continuity pilots. G6 is packaging the accepted flow behind one unified demo/operator entry point with recovery guidance, measured actions and a sanitized report.**
+**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G6 have completed progressively stronger local/cross-surface continuity pilots. G6 completed one fresh unified-operator run with recovery guidance, cwd-safe pilot launcher, measured actions, a sanitized report, explicit human approval and post-decision resume.**
 
 Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, and a *read-only* Web timeline that can render cross-surface lineage. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control. G4 demonstrated one real synthetic Chat → Work → Codex → Chat loop through explicit GitHub transport and human approval.
 
@@ -68,7 +68,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-The latest user-observed WSL G4 baseline passed **25/25 Node tests + 10/10 synthetic assertions**, then completed one real bounded Chat → Work → Codex → Chat continuity run with preserved canonical task identity, independent verification, explicit human approval and post-decision resume. G5 adapter/UI additions have been committed but still require a fresh WSL rerun. Tests execute trusted local repository code, not an untrusted-code sandbox.
+The latest user-observed G6 WSL baseline passed **33/33 Node tests + 10/10 synthetic assertions**. The fresh G6 run then reached `COMPLETED` with canonical task identity preserved, `INDEPENDENT_CHECKS_PASS`, explicit human approval, `environment_match=true`, `worktree_clean=true`, three transport packets, **6 recorded unified demo CLI commands**, and **0 manual JSON-copy actions**. Tests execute trusted local repository code, not an untrusted-code sandbox.
 
 ## Research / public development
 
@@ -98,4 +98,4 @@ G5 added and validated a local transport adapter that checks Work drafts, seals 
 
 ## G6 — unified demo operator
 
-G6 introduces `npm run demo -- ...` as the single operator entry point for `prepare`, `status`, `finish`, explicit `approve`, sanitized `report`, and recovery guidance. It records only actions actually performed in the fresh G6 run; G4/G5 historical user-action counts are not retroactively invented. See [G6 guide](docs/g6-unified-demo.md).
+G6 validated `npm run demo -- ...` plus a pilot-local `relay-demo` launcher as the unified operator path for `prepare`, `status`, `finish`, explicit `approve`, sanitized `report`, and recovery guidance. The accepted fresh run recorded 6 unified demo CLI commands and 0 manual JSON-copy actions. G4/G5 historical user-action counts are not retroactively invented. See [G6 guide](docs/g6-unified-demo.md).
