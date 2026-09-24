@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {load} from '../src/core.mjs';
 import {buildDemoReport,currentSurface,loadMetrics,recordMetric,recoveryFor,reportMarkdown,requiredHumanAction} from '../src/demo-state.mjs';
 
@@ -9,6 +10,32 @@ const argv=process.argv.slice(2);
 const command=argv.shift();
 const opt=(n,d)=>{const i=argv.indexOf(n);return i>=0?argv[i+1]:d;};
 const has=n=>argv.includes(n);
+const sourceRoot=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
+const self=fileURLToPath(import.meta.url);
+const shq=s=>"'"+String(s).replace(/'/g,"'\\''")+"'";
+
+function ensureLauncher(pilotDir){
+  const launcher=path.join(pilotDir,'relay-demo');
+  const code=[
+    '#!/usr/bin/env node',
+    "import {spawnSync} from 'node:child_process';",
+    'const demo='+JSON.stringify(self)+';',
+    'const pilot='+JSON.stringify(path.resolve(pilotDir))+';',
+    'const argv=process.argv.slice(2);',
+    'const command=argv.shift();',
+    "if(!command){console.error('USAGE: relay-demo status|finish|approve|report ...');process.exit(1);}",
+    "const needsPilot=new Set(['status','finish','approve','report']);",
+    'const args=[demo,command];',
+    "if(needsPilot.has(command))args.push('--pilot',pilot);",
+    'args.push(...argv);',
+    "const r=spawnSync(process.execPath,args,{stdio:'inherit'});",
+    'process.exitCode=r.status??1;',
+    ''
+  ].join('\\n');
+  fs.writeFileSync(launcher,code,{mode:0o700});
+  fs.chmodSync(launcher,0o700);
+  return launcher;
+}
 
 function child(script,args=[]){
   const r=spawnSync(process.execPath,[new URL(script,import.meta.url).pathname,...args],{encoding:'utf8',timeout:60000});
@@ -43,7 +70,7 @@ function statusPayload(root,p){
     independent_review:task.review?.status??null,
     packet_lineage:(snap?.packets||[]).map(x=>({seq:x.seq,packet_id:x.packet_id,stage:x.stage,from:x.source_surface,to:x.target_surface,parent:x.parent_packet_id})),
     ui_url:'http://127.0.0.1:4317/?task='+encodeURIComponent(task.id),
-    ui_command:'cd ~/relay-continuity-lab && RELAY_STORE='+p.store+' npm run ui',
+    ui_command:'cd '+shq(sourceRoot)+' && RELAY_STORE='+shq(p.store)+' npm run ui',
     measured_demo_commands:loadMetrics(root).events.filter(e=>e.kind==='DEMO_COMMAND').length
   };
 }
@@ -55,11 +82,14 @@ try {
     const args=['--issue',issue,'--repo',repo];if(has('--publish-work'))args.push('--publish-work');
     const out=child('./g5-pilot-prepare.mjs',args);
     recordMetric(out.pilot_dir,{kind:'DEMO_COMMAND',command:'prepare'});
+    const launcher=ensureLauncher(out.pilot_dir);
     console.log(JSON.stringify({...out,
       demo_command:'prepare',
+      launcher,
+      ui_command:'cd '+shq(sourceRoot)+' && RELAY_STORE='+shq(out.store)+' npm run ui',
       next_human_action:'Open the generated demo-repo in the authorized local coding Agent and execute AGENT_TASK.md. No JSON copying is required.',
-      status_command:'npm run demo -- status --pilot '+out.pilot_dir,
-      finish_command:'npm run demo -- finish --pilot '+out.pilot_dir+' --publish-receipt'
+      status_command:shq(launcher)+' status',
+      finish_command:shq(launcher)+' finish --publish-receipt'
     },null,2));
   } else if(command==='status'){
     const {root,p}=pilot(opt('--pilot',''));
@@ -73,7 +103,7 @@ try {
     console.log(JSON.stringify({...out,
       demo_command:'finish',
       next_human_action:'Review the published receipt in Chat. If accepted, run the explicit demo approve command.',
-      approve_command:'npm run demo -- approve --pilot '+root+' --decision APPROVE',
+      approve_command:shq(path.join(root,'relay-demo'))+' approve --decision APPROVE',
       status:statusPayload(root,p)
     },null,2));
   } else if(command==='approve'){
@@ -88,7 +118,7 @@ try {
     const decided=run('decide',p.task_id,'--decision',decision);
     const resumed=run('resume',p.task_id);
     recordMetric(root,{kind:'DEMO_COMMAND',command:'approve',decision});
-    console.log(JSON.stringify({decision,decided_state:decided.state,resume:resumed,status:statusPayload(root,p),next:'Run `npm run demo -- report --pilot '+root+'` to produce the sanitized demo report.'},null,2));
+    console.log(JSON.stringify({decision,decided_state:decided.state,resume:resumed,status:statusPayload(root,p),next:'Run '+shq(path.join(root,'relay-demo'))+' report to produce the sanitized demo report.'},null,2));
   } else if(command==='report'){
     const {root,p}=pilot(opt('--pilot',''));
     recordMetric(root,{kind:'DEMO_COMMAND',command:'report'});
