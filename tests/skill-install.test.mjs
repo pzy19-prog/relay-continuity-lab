@@ -54,6 +54,8 @@ test('project install is discoverable under .agents/skills and the test fixture 
  const {p,g}=repo(temp),r=sh(process.execPath,[installer,'--scope','project','--host','cursor','--project-dir',p]);assert.equal(r.status,0,r.stderr);
  const file=path.join(p,'.agents','skills','relay-lab','SKILL.md');assert.ok(fs.existsSync(file));
  assert.match(fs.readFileSync(file,'utf8'),/name: relay-lab/);
+ assert.ok(fs.existsSync(path.join(p,'.agents','skills','relay-lab','vendor','service-client.mjs')));
+ assert.match(fs.readFileSync(file,'utf8'),/service-show/);
  g('add','.');g('commit','-qm','fixture: installed Skill');
  assert.equal(g('status','--porcelain'),'');
 });

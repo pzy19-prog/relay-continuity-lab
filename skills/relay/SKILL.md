@@ -16,11 +16,21 @@ node .agents/skills/relay-lab/scripts/relay.mjs show <task-id>
 node .agents/skills/relay-lab/scripts/relay.mjs resume <task-id>
 ```
 
-For a project-scoped install, the authorized project may contain a committed `.relay-lab.json` binding such as `{"schema":1,"id":"relay-continuity-lab/project-binding","store":"../relay-store"}`. The wrapper resolves that store automatically across sessions. If the binding is absent, it fails with `PROJECT_STORE_UNBOUND` instead of silently falling back to `~/.relay-lab-local`. Explicit `--store` or `RELAY_STORE` still overrides the binding.
+For a project-scoped install, the authorized project may contain a committed `.relay-lab.json` binding such as `{"schema":1,"id":"relay-continuity-lab/project-binding","store":"../relay-store"}`. The wrapper resolves that store automatically across sessions. If the binding is absent, state-changing/direct-store commands fail with `PROJECT_STORE_UNBOUND` instead of silently falling back to `~/.relay-lab-local`.
+
+G8 adds read-only Service commands that do not require `--store` or a project binding when the local Relay Service is running:
+
+```bash
+node .agents/skills/relay-lab/scripts/relay.mjs service-health
+node .agents/skills/relay-lab/scripts/relay.mjs service-show <task-id>
+node .agents/skills/relay-lab/scripts/relay.mjs service-checkpoint <task-id>
+```
+
+They use the loopback-only Service Contract (default `http://127.0.0.1:4318`) and cannot approve, submit receipts, or mutate task state.
 
 ## Workflow
 
-1. **Start by inspecting state:** `show <task-id>` and `resume <task-id>` for an existing task. Check `environment_match`; if false, **stop** and ask for explicit reconciliation. Treat a returned `HANDED_OFF` task as assigned to the declared `actor`, not general permission to run arbitrary commands.
+1. **Start by inspecting state:** when the local Relay Service is available, prefer `service-show <task-id>` and `service-checkpoint <task-id>` so the Agent does not need the store path. Otherwise use `show <task-id>` and `resume <task-id>` for an existing task. Check `environment_match`; if false, **stop** and ask for explicit reconciliation. Treat a returned `HANDED_OFF` task as assigned to the declared `actor`, not general permission to run arbitrary commands.
 2. **Create a task only with user authorization:** `create --goal "..." --repo /trusted/isolated/repo --actor local-agent --allowed calc.mjs --test calc.test.mjs --constraints '...'`, then `handoff <task-id>`. A `handoff` command changes ownership; do not run it twice.
 3. **Execute only if explicitly appointed:** If the user asked this Agent to act as executor for the named task, work solely in the named repo and declared paths, run the specified independent test, and produce a commit. Never modify the verifier or tests to make a failed change pass. Never `push`, contact a provider, delete a repo or open secret files without separate authorization.
 4. **Record observed evidence rather than self-assessed success:** The trusted controller may create a receipt JSON with exact task, actor, base/head commit, and file hashes. After submission, run `receipt <task-id> --file <file>` then `verify <task-id>`. Missing evidence/stale head/out-of-scope changes block. A self-reported actor label is not authenticated proof.

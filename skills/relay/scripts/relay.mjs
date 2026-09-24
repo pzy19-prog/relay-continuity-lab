@@ -9,6 +9,26 @@ const cli = fileURLToPath(new URL('../vendor/cli.mjs', import.meta.url));
 const argv = process.argv.slice(2);
 const env = {...process.env};
 
+const serviceCommand=argv[0];
+if(['service-health','service-list','service-show','service-checkpoint'].includes(serviceCommand)){
+  try{
+    const {serviceGet}=await import(new URL('../vendor/service-client.mjs',import.meta.url).href);
+    let endpoint;
+    if(serviceCommand==='service-health')endpoint='v1/health';
+    else if(serviceCommand==='service-list')endpoint='v1/tasks';
+    else{
+      const id=argv[1];
+      if(!id){console.error('RELAY_SKILL_SERVICE_ERROR: TASK_ID_REQUIRED');process.exit(2);}
+      endpoint='v1/tasks/'+encodeURIComponent(id)+(serviceCommand==='service-checkpoint'?'/checkpoint':'');
+    }
+    console.log(JSON.stringify(await serviceGet(endpoint),null,2));
+    process.exit(0);
+  }catch(e){
+    console.error('RELAY_SKILL_SERVICE_ERROR: '+e.message);
+    process.exit(2);
+  }
+}
+
 function findProjectBinding(start) {
   let dir = path.resolve(start);
   while (true) {

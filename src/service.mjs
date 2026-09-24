@@ -20,7 +20,8 @@ function lineage(snapshot){
     stage:p.stage,
     from:p.source_surface,
     to:p.target_surface,
-    parent_packet_id:p.parent_packet_id
+    parent_packet_id:p.parent_packet_id,
+    review_status:p.payload?.review_status??null
   }));
 }
 
@@ -44,7 +45,8 @@ function taskView(store,task){
     }:null,
     current_surface:currentSurface(task,snap),
     required_human_action:requiredHumanAction(task,snap),
-    transport_lineage:lineage(snap)
+    transport_lineage:lineage(snap),
+    events:(task.events||[]).map(e=>({seq:e.seq,at:e.at,kind:e.kind,detail:e.detail}))
   };
 }
 

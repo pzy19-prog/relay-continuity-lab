@@ -28,7 +28,7 @@ const skillsRoot = customRoot ? path.resolve(customRoot) : scope === 'project'
   ? path.join(projectDir, '.agents', 'skills')
   : path.join(os.homedir(), host === 'cursor' ? '.cursor' : '.agents', 'skills');
 const dest = path.join(skillsRoot, 'relay-lab');
-const names = ['SKILL.md', 'scripts/relay.mjs', 'vendor/core.mjs', 'vendor/cli.mjs'];
+const names = ['SKILL.md', 'scripts/relay.mjs', 'vendor/core.mjs', 'vendor/cli.mjs', 'vendor/service-client.mjs'];
 const sha = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 const fail = text => { throw new Error(text); };
 const readState = () => {
@@ -73,7 +73,8 @@ const map = new Map([
   ['SKILL.md', 'skills/relay/SKILL.md'],
   ['scripts/relay.mjs', 'skills/relay/scripts/relay.mjs'],
   ['vendor/core.mjs','src/core.mjs'],
-  ['vendor/cli.mjs','src/cli.mjs']
+  ['vendor/cli.mjs','src/cli.mjs'],
+  ['vendor/service-client.mjs','src/service-client.mjs']
 ]);
 try {
   fs.mkdirSync(tmp, {mode:0o700});
