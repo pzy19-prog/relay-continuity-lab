@@ -2,9 +2,9 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G6 have completed progressively stronger local/cross-surface continuity pilots. G6 completed one fresh unified-operator run with recovery guidance, cwd-safe pilot launcher, measured actions, a sanitized report, explicit human approval and post-decision resume.**
+**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G7 have completed progressively stronger local/cross-surface continuity pilots. G7 validated a loopback-only, read/status Relay Service API against the accepted G6 store, including stop/restart durability with unchanged task/checkpoint/lineage.**
 
-Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, and a *read-only* Web timeline that can render cross-surface lineage. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control. G4 demonstrated one real synthetic Chat → Work → Codex → Chat loop through explicit GitHub transport and human approval.
+Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, a *read-only* Web timeline, and a loopback-only read/status Relay Service API. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control.
 
 > Product thesis (to be tested): preserve the right task state, constraints and evidence across AI surfaces without repeatedly restating the full conversation — and fail visibly when evidence or environment is inconsistent.
 
@@ -68,7 +68,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-The latest user-observed G6 WSL baseline passed **33/33 Node tests + 10/10 synthetic assertions**. The fresh G6 run then reached `COMPLETED` with canonical task identity preserved, `INDEPENDENT_CHECKS_PASS`, explicit human approval, `environment_match=true`, `worktree_clean=true`, three transport packets, **6 recorded unified demo CLI commands**, and **0 manual JSON-copy actions**. Tests execute trusted local repository code, not an untrusted-code sandbox.
+The latest user-observed G7 WSL baseline passed **35/35 Node tests + 10/10 synthetic assertions**. The service started on `127.0.0.1:4318`, served the accepted G6 task without store migration, returned the same completed checkpoint and three-stage lineage, then reproduced the same values after stop/restart. Tests execute trusted local repository code, not an untrusted-code sandbox.
 
 ## Research / public development
 
@@ -99,3 +99,7 @@ G5 added and validated a local transport adapter that checks Work drafts, seals 
 ## G6 — unified demo operator
 
 G6 validated `npm run demo -- ...` plus a pilot-local `relay-demo` launcher as the unified operator path for `prepare`, `status`, `finish`, explicit `approve`, sanitized `report`, and recovery guidance. The accepted fresh run recorded 6 unified demo CLI commands and 0 manual JSON-copy actions. G4/G5 historical user-action counts are not retroactively invented. See [G6 guide](docs/g6-unified-demo.md).
+
+## G7 — local Relay Service/API
+
+G7 validated a loopback-only (`127.0.0.1`) read/status API with `health`, task detail and checkpoint endpoints. The accepted G6 JSON store required no migration. A real WSL stop/restart preserved task ID, `COMPLETED` state, owner, head, `environment_match=true`, `worktree_clean=true`, and the full `CHAT_INTENT → WORK_CONTINUATION → EXECUTION_RECEIPT` lineage. The service intentionally has no remote bind, CORS, cloud tunnel, provider credentials or service-side approval. See [G7 guide](docs/g7-local-service.md).

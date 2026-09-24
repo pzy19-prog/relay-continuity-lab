@@ -2,9 +2,9 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G6 已完成逐步增强的本地与跨界面连续性实验；G6 已完成一次全新的统一 operator 实测，包含失败恢复提示、cwd-safe pilot launcher、实际操作计数、脱敏报告、人工批准和批准后 resume。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G7 已完成逐步增强的本地与跨界面连续性实验；G7 已实测 loopback-only 的只读/状态 Relay Service API，并验证同一 G6 store 在服务停止/重启后仍保持相同 task、checkpoint 与 lineage。**
 
-Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper，以及可显示跨端 lineage 的**只读** Web UI。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。G4 已实测完成一次合成任务的 Chat → Work → Codex → Chat 显式闭环。
+Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper、可显示跨端 lineage 的**只读** Web UI，以及 loopback-only 的只读/状态 Relay Service API。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。
 
 > 待验证的产品假设：跨 AI 界面保留正确的任务状态、约束与证据，无需反复粘贴完整对话；遇到过期环境或证据不足时明确阻断。
 
@@ -93,7 +93,7 @@ node scripts/skill-pilot-prepare.mjs
 
 脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
 
-最近一次用户 WSL 的 G6 基线为 **33/33 Node 测试 + 10/10 合成断言通过**。随后 fresh G6 run 达到 `COMPLETED`：canonical task ID 全程保持、`INDEPENDENT_CHECKS_PASS`、显式人工批准、`environment_match=true`、`worktree_clean=true`，transport 共 3 个 packet；本轮真实记录 **6 次统一 demo CLI 命令**，**手工 JSON 复制为 0 次**。
+最近一次用户 WSL 的 G7 基线为 **35/35 Node 测试 + 10/10 合成断言通过**。Service 在 `127.0.0.1:4318` 启动，无需迁移即可读取已验收 G6 store；停止并重新启动后，task ID、`COMPLETED` 状态、owner、head、`environment_match=true`、`worktree_clean=true` 和三段 transport lineage 均保持一致。
 
 ## G4：Chat → Work → Codex 显式中转
 
@@ -106,3 +106,7 @@ G5 已实现并实测本地 transport adapter：自动校验 Work draft、封装
 ## G6：统一 Demo 入口
 
 G6 已实测 `npm run demo -- ...` 与 pilot-local `relay-demo` launcher，统一承载 `prepare`、`status`、`finish`、显式 `approve`、脱敏 `report` 和恢复提示。本轮 fresh run 真实记录 6 次统一 demo CLI 命令、0 次手工 JSON 复制；不为 G4/G5 事后杜撰精确点击/切换数量。详见 [G6 指南](docs/g6-unified-demo.md)。
+
+## G7：本地 Relay Service/API
+
+G7 已实测 loopback-only（`127.0.0.1`）只读/状态 API，包括 `health`、task detail 和 checkpoint。已验收 G6 JSON store 无需迁移即可直接服务；真实 WSL 停止/重启后，task ID、`COMPLETED` 状态、owner、head、`environment_match=true`、`worktree_clean=true` 以及完整 `CHAT_INTENT → WORK_CONTINUATION → EXECUTION_RECEIPT` lineage 均保持一致。该 Service 明确不开放远程 bind、CORS、cloud tunnel、provider credentials，也不允许 service-side 自动审批。详见 [G7 指南](docs/g7-local-service.md)。
