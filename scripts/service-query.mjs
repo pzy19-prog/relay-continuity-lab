@@ -10,6 +10,8 @@ if(command==='health')path='v1/health';
 else if(command==='list')path='v1/tasks';
 else if(command==='show'&&id)path='v1/tasks/'+encodeURIComponent(id);
 else if(command==='checkpoint'&&id)path='v1/tasks/'+encodeURIComponent(id)+'/checkpoint';
-else throw new Error('USAGE: service-query.mjs health|list|show <task-id>|checkpoint <task-id>');
+else if(command==='inbox')path='v1/transport-inbox';
+else if(command==='inbox-show'&&id)path='v1/transport-inbox/'+encodeURIComponent(id);
+else throw new Error('USAGE: service-query.mjs health|list|show <task-id>|checkpoint <task-id>|inbox|inbox-show <task-id>');
 
 console.log(JSON.stringify(await serviceGet(path),null,2));

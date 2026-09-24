@@ -24,6 +24,8 @@ G8 adds read-only Service commands that do not require `--store` or a project bi
 node .agents/skills/relay-lab/scripts/relay.mjs service-health
 node .agents/skills/relay-lab/scripts/relay.mjs service-show <task-id>
 node .agents/skills/relay-lab/scripts/relay.mjs service-checkpoint <task-id>
+node .agents/skills/relay-lab/scripts/relay.mjs service-inbox
+node .agents/skills/relay-lab/scripts/relay.mjs service-inbox-show <task-id>
 ```
 
 They use the loopback-only Service Contract (default `http://127.0.0.1:4318`) and cannot approve, submit receipts, or mutate task state.

@@ -57,3 +57,13 @@ export async function loadUiTask(id,{store=defaultStore,serviceUrl=process.env.R
   if(serviceUrl)return normalizeService(await serviceGet('v1/tasks/'+encodeURIComponent(id),{base:serviceUrl}));
   return normalizeDirect(load(store,id),store);
 }
+
+export async function loadUiInbox({serviceUrl=process.env.RELAY_SERVICE_URL||null}={}){
+  if(!serviceUrl)return [];
+  const payload=await serviceGet('v1/transport-inbox',{base:serviceUrl});
+  return payload.items||[];
+}
+export async function loadUiInboxItem(id,{serviceUrl=process.env.RELAY_SERVICE_URL||null}={}){
+  if(!serviceUrl)throw new Error('SERVICE_MODE_REQUIRED_FOR_INBOX');
+  return serviceGet('v1/transport-inbox/'+encodeURIComponent(id),{base:serviceUrl});
+}

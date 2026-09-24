@@ -13,7 +13,8 @@
     "transport": "node scripts/transport-adapter.mjs",
     "demo": "node scripts/demo.mjs",
     "service": "node src/service.mjs",
-    "service:query": "node scripts/service-query.mjs"
+    "service:query": "node scripts/service-query.mjs",
+    "sync": "node scripts/transport-sync.mjs"
   },
   "license": "MIT"
 }

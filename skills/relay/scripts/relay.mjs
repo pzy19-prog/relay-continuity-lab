@@ -10,12 +10,17 @@ const argv = process.argv.slice(2);
 const env = {...process.env};
 
 const serviceCommand=argv[0];
-if(['service-health','service-list','service-show','service-checkpoint'].includes(serviceCommand)){
+if(['service-health','service-list','service-show','service-checkpoint','service-inbox','service-inbox-show'].includes(serviceCommand)){
   try{
     const {serviceGet}=await import(new URL('../vendor/service-client.mjs',import.meta.url).href);
     let endpoint;
     if(serviceCommand==='service-health')endpoint='v1/health';
     else if(serviceCommand==='service-list')endpoint='v1/tasks';
+    else if(serviceCommand==='service-inbox')endpoint='v1/transport-inbox';
+    else if(serviceCommand==='service-inbox-show'){
+      const id=argv[1];if(!id){console.error('RELAY_SKILL_SERVICE_ERROR: TASK_ID_REQUIRED');process.exit(2);}
+      endpoint='v1/transport-inbox/'+encodeURIComponent(id);
+    }
     else{
       const id=argv[1];
       if(!id){console.error('RELAY_SKILL_SERVICE_ERROR: TASK_ID_REQUIRED');process.exit(2);}

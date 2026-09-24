@@ -4,6 +4,7 @@ import http from 'node:http';
 import {fileURLToPath} from 'node:url';
 import {defaultStore,list,load,resume} from './core.mjs';
 import {currentSurface,requiredHumanAction} from './demo-state.mjs';
+import {readTransportInbox,loadTransportInboxTask} from './transport-inbox.mjs';
 
 function transportSnapshot(store,id){
   const file=path.join(store,'transport',id+'.json');
@@ -50,6 +51,8 @@ function taskView(store,task){
   };
 }
 
+function inboxView(record){return {schema:'relay-lab/service-inbox-v1',source:record.source,task_id:record.task_id,status:record.status,last_accepted:record.last_accepted,transport_lineage:lineage({packets:record.packets})};}
+
 function json(res,status,payload){
   res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});
   res.end(JSON.stringify(payload));
@@ -71,6 +74,16 @@ export function createRelayService({store=defaultStore}={}){
       }
       if(url.pathname==='/v1/health'){
         json(res,200,{schema:'relay-lab/service-health-v1',status:'ok',api:'v1',mode:'read-only',store_bound:true});
+        return;
+      }
+      if(url.pathname==='/v1/transport-inbox'){
+        json(res,200,{schema:'relay-lab/service-inbox-list-v1',items:readTransportInbox(store).map(inboxView)});
+        return;
+      }
+      const inbox=/^\/v1\/transport-inbox\/([^/]+)$/.exec(url.pathname);
+      if(inbox){
+        const id=decodeURIComponent(inbox[1]);
+        json(res,200,inboxView(loadTransportInboxTask(store,id)));
         return;
       }
       if(url.pathname==='/v1/tasks'){
