@@ -3,11 +3,14 @@
   "private": true,
   "version": "0.0.1-prealpha",
   "type": "module",
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "relay": "node src/cli.mjs",
     "ui": "node src/web.mjs",
-    "test": "node --test tests/*.test.mjs && node benchmark/smoke.mjs"
+    "test": "node --test tests/*.test.mjs && node benchmark/smoke.mjs",
+    "transport": "node scripts/transport-adapter.mjs"
   },
   "license": "MIT"
 }
