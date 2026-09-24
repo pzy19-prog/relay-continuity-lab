@@ -2,9 +2,9 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2 completed one bounded manual real local-Agent handoff; G3 completed one real project-Skill discovery/binding/execution/verification/resume loop; G4 Chat → Work → Codex explicit transport is now under test.**
+**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2 completed one bounded manual real local-Agent handoff; G3 completed one real project-Skill discovery/binding/execution/verification/resume loop; G4 completed one real explicit Chat → Work → Codex → Chat continuity loop; G5 is reducing manual transport steps and exposing packet lineage in the local UI.**
 
-Relay Lab explores evidence-bound task continuity across specialized AI surfaces. This starter **actually implements** a local single-user Core, CLI, manual handoff packet, explicit receipt + independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, and a *read-only* thin Web timeline. It **does not** integrate automatically with ChatGPT Chat, Work, Codex, Claude, or Gemini. The automated demo fixture is synthetic; a separate user-observed G2 pilot completed one real local-Agent edit, independent verification, explicit human approval and a separate-process resume. G3 Skill use in a real host remains to be tested.
+Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, and a *read-only* Web timeline that can render cross-surface lineage. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control. G4 demonstrated one real synthetic Chat → Work → Codex → Chat loop through explicit GitHub transport and human approval.
 
 > Product thesis (to be tested): preserve the right task state, constraints and evidence across AI surfaces without repeatedly restating the full conversation — and fail visibly when evidence or environment is inconsistent.
 
@@ -68,7 +68,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-In the isolated artifact container the packaged prototype passed **19 integration tests and 10 design assertions**. The four new regressions reject post-receipt dirty worktrees, untracked file changes, symlink replacement of evidence and symlink test inputs. Tests execute trusted local repository code, not an untrusted-code sandbox. The latest user-observed WSL baseline before the G4 transport additions passed 21/21 Node tests plus 10/10 synthetic assertions. The new G4 transport code still requires a fresh WSL rerun. Actual three-surface Chat/Work/Codex continuity remains unverified.
+The latest user-observed WSL G4 baseline passed **25/25 Node tests + 10/10 synthetic assertions**, then completed one real bounded Chat → Work → Codex → Chat continuity run with preserved canonical task identity, independent verification, explicit human approval and post-decision resume. G5 adapter/UI additions have been committed but still require a fresh WSL rerun. Tests execute trusted local repository code, not an untrusted-code sandbox.
 
 ## Research / public development
 
@@ -91,3 +91,7 @@ This prepares a **new** isolated repository with a committed project-level `.age
 ## G4 — Chat → Work → Codex explicit transport
 
 G4 uses a dedicated GitHub Issue as a temporary, auditable transport. Chat publishes a sealed intent packet; Work emits a structured continuation draft; Chat validates/seals it; WSL then imports the packet chain and creates the same canonical task ID locally. See [G4 guide](docs/g4-chat-work-codex.md). This is not hidden-session synchronization or direct Work-to-WSL networking.
+
+## G5 — reduce manual transport steps
+
+G5 adds a local transport adapter that validates Work drafts, seals `WORK_CONTINUATION`, optionally publishes through authenticated `gh`, stores a transport snapshot beside Relay state, and renders the packet lineage in the read-only UI. Publishing remains dry-run by default; `--publish-work` / `--publish-receipt` are explicit actions. See [G5 guide](docs/g5-transport-ui.md).
