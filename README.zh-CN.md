@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2 已完成真实本地 Agent 人工交接闭环；G3 已完成真实项目级 Skill 闭环；G4 已完成一次真实的显式 Chat → Work → Codex → Chat 连续性闭环；G5 正在减少人工 transport 步骤，并把跨端 packet lineage 显示到本地 UI。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2 已完成真实本地 Agent 人工交接闭环；G3 已完成真实项目级 Skill 闭环；G4 已完成一次真实的显式 Chat → Work → Codex → Chat 连续性闭环；G5 已完成一次减少人工 transport 步骤、受保护 GitHub 发布和本地 UI 跨端 lineage 展示的真实合成闭环。**
 
 Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper，以及可显示跨端 lineage 的**只读** Web UI。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。G4 已实测完成一次合成任务的 Chat → Work → Codex → Chat 显式闭环。
 
@@ -101,4 +101,4 @@ G4 暂时使用专用 GitHub Issue 作为可审计 transport：Chat 发布封装
 
 ## G5：减少人工 transport 步骤
 
-G5 新增本地 transport adapter：自动校验 Work draft、封装 `WORK_CONTINUATION`、可选择通过已认证的 `gh` 发布、把 transport snapshot 与 Relay state 一起保存，并在只读 UI 中显示完整 packet lineage。发布默认 dry-run，只有显式 `--publish-work` / `--publish-receipt` 才会写 GitHub。详见 [G5 指南](docs/g5-transport-ui.md)。
+G5 已实现并实测本地 transport adapter：自动校验 Work draft、封装 `WORK_CONTINUATION`、仅在显式 flag 下通过已认证的 `gh` 发布、把 transport snapshot 与 Relay state 一起保存，并在只读 UI 中显示完整 packet lineage。一次真实合成 G5 任务已经经过人工批准和批准后 resume。详见 [G5 指南](docs/g5-transport-ui.md)。
