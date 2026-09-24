@@ -10,7 +10,8 @@
     "relay": "node src/cli.mjs",
     "ui": "node src/web.mjs",
     "test": "node --test tests/*.test.mjs && node benchmark/smoke.mjs",
-    "transport": "node scripts/transport-adapter.mjs"
+    "transport": "node scripts/transport-adapter.mjs",
+    "demo": "node scripts/demo.mjs"
   },
   "license": "MIT"
 }
