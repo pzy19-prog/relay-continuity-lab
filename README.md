@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G9 are accepted. G9 proved that one bounded Chat→Work GitHub transport chain can be detected, validated, sealed and mirrored automatically into a local Transport Inbox, then exposed through Service/UI without a manual transport-import command or implicit local task creation.**
+**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G10 are accepted. G10 proved that a validated cloud transport can become a local Relay task only through an explicit human-authorized bind that preserves canonical task identity, scope, test, constraints and immutable provenance, while still stopping before executor handoff.**
 
 Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, a *read-only* Web timeline, and a loopback-only read/status Relay Service API. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control.
 
@@ -68,7 +68,7 @@ Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-pr
 
 ## Observed local checks
 
-The latest user-observed G9 WSL baseline passed **40/40 Node tests + 10/10 smoke assertions**. A fresh public-safe GitHub pilot advanced automatically from `chat-001` to `work-001` in Transport Inbox, repeated sync and worker restart were idempotent, Service/UI showed the validated cloud lineage, and no local coding task was created. Tests execute trusted local repository code, not an untrusted-code sandbox.
+The latest user-observed G10 WSL baseline passed **43/43 Node tests + 10/10 smoke assertions**. A fresh local pilot explicitly bound the accepted G9 `work-001` transport into exactly one `CREATED` local task with the same canonical task ID, exact scope/test/constraints, immutable source packet/local-base provenance, and idempotent repeated bind. No handoff, code execution, receipt, verification or decision occurred. Tests execute trusted local repository code, not an untrusted-code sandbox.
 
 ## Research / public development
 
@@ -111,3 +111,7 @@ G8 is accepted. The Web UI can run with `RELAY_SERVICE_URL=http://127.0.0.1:4318
 ## G9 — bounded GitHub transport sync worker
 
 G9 is accepted. A local authenticated-`gh api` worker can watch one explicitly configured GitHub repo/Issue, validate packet hash/lineage/public-safety, deterministically seal one valid Work draft, and mirror the accepted chain into a separate Transport Inbox. The fresh pilot reached `chat-001 -> work-001` with repeated sync and restart idempotence, while `Task Inbox` remained empty. The service-backed UI visibly showed `VALIDATED`, source Issue #13, `Last: work-001 · seq 2`, and the two-stage validated cloud lineage. No manual transport-import command, local code execution, receipt/verify/decide, or auto-approval occurred. See [G9 guide](docs/g9-transport-sync-worker.md).
+
+## G10 — explicit Transport Inbox → Local Task binding
+
+G10 is accepted. A validated Transport Inbox item becomes a local Relay task only through an explicit human-authorized bind naming the canonical task, target repo, reviewed packet ID and reviewed packet hash. The accepted fresh pilot preserved `R-G9-GITHUB-SYNC-001`, created exactly one local task in `CREATED` with owner `human`, preserved goal/paths/test/constraints, recorded source Issue #13 + `work-001` hash + exact local base commit as immutable provenance, and returned `IDEMPOTENT` on repeat. Service/UI visibly distinguish the synced Transport Inbox item (`VALIDATED / BOUND`) from the separate local task (`CREATED`). No executor handoff or code execution happened automatically. See [G10 guide](docs/g10-transport-bind.md).

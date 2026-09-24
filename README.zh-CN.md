@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G9 已验收；G9 已证明一个受限的 Chat→Work GitHub transport chain 可以被本地 worker 自动发现、校验、seal 并镜像到 Transport Inbox，再通过 Service/UI 展示，无需手工 transport import，也不会隐式创建本地 coding task。**
+**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G10 已验收；G10 已证明经过验证的 cloud transport 只有在显式人工授权 bind 后才能成为本地 Relay task，并保持 canonical task identity、scope、test、constraints 与不可变 provenance，同时仍停在 executor handoff 之前。**
 
 Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper、可显示跨端 lineage 的**只读** Web UI，以及 loopback-only 的只读/状态 Relay Service API。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。
 
@@ -93,7 +93,7 @@ node scripts/skill-pilot-prepare.mjs
 
 脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
 
-最近一次用户 WSL 的 G9 基线为 **40/40 Node 测试 + 10/10 smoke assertions 通过**。fresh public-safe GitHub pilot 自动从 `chat-001` 扩展到 `work-001` 并进入 Transport Inbox；重复 sync 与 worker restart 均保持幂等，Service/UI 显示相同 validated cloud lineage，同时没有创建本地 coding task。
+最近一次用户 WSL 的 G10 基线为 **43/43 Node 测试 + 10/10 smoke assertions 通过**。fresh local pilot 将已验收的 G9 `work-001` 通过显式 bind 创建为且仅创建为一个 `CREATED` 本地 task；canonical task ID、scope/test/constraints 保持不变，source packet 与 local base provenance 被记录，重复 bind 幂等。全程没有 handoff、代码执行、receipt、verify 或 decision。
 
 ## G4：Chat → Work → Codex 显式中转
 
@@ -118,3 +118,7 @@ G8 已验收。Web UI 可通过 `RELAY_SERVICE_URL=http://127.0.0.1:4318` 运行
 ## G9：受限 GitHub transport sync worker
 
 G9 已验收。本地 authenticated-`gh api` worker 可监控一个明确配置的 GitHub repo/Issue，校验 packet hash、lineage 与 public-safety，确定性 seal 唯一合法 Work draft，并把已接受链路镜像到独立 Transport Inbox。fresh pilot 达到 `chat-001 -> work-001`，重复 sync 与 worker restart 均幂等，同时 `Task Inbox` 保持为空。service-backed UI 人工可见验证了 `VALIDATED`、来源 Issue #13、`Last: work-001 · seq 2` 以及两段 validated cloud lineage。全程没有手工 transport-import、没有本地代码执行、没有 receipt/verify/decide，也没有自动批准。详见 [G9 指南](docs/g9-transport-sync-worker.md)。
+
+## G10：显式 Transport Inbox → Local Task 绑定
+
+G10 已验收。经过验证的 Transport Inbox item 只有通过显式人工授权 bind（指定 canonical task、target repo、reviewed packet ID 与 hash）后，才会成为本地 Relay task。fresh pilot 保持 `R-G9-GITHUB-SYNC-001`，只创建一个 `CREATED`、owner=`human` 的本地 task；goal/paths/test/constraints 原样保留，并将来源 Issue #13、`work-001` hash 与 exact local base commit 记录为不可变 provenance。重复相同 bind 返回 `IDEMPOTENT`。Service/UI 明确区分已同步的 Transport Inbox（`VALIDATED / BOUND`）和独立的本地 Task（`CREATED`）。没有自动 executor handoff 或代码执行。详见 [G10 指南](docs/g10-transport-bind.md)。
