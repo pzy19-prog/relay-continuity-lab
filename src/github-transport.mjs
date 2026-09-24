@@ -70,9 +70,11 @@ export async function fetchIssueBundle({repo='pzy19-prog/relay-continuity-lab',i
     item=await api(base+'/issues/'+issue);
     comments=await api(base+'/issues/'+issue+'/comments?per_page=100');
   }
-  const all=[item.body||'',...comments.map(c=>c.body||'')];
-  const packets=all.flatMap(extractPackets);
-  const drafts=all.flatMap(extractWorkDrafts);
+  const packetTexts=[item.body||'',...comments.map(c=>c.body||'')];
+  const packets=packetTexts.flatMap(extractPackets);
+  // Only comments are eligible Work outputs. The Issue body may contain an instructional
+  // relay-work-draft-v0 example, which must never count as an observed Work response.
+  const drafts=comments.flatMap(c=>extractWorkDrafts(c.body||''));
   return {item,comments,packets,drafts,reader};
 }
 
