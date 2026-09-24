@@ -15,8 +15,16 @@ let bundle=await fetchIssueBundle({repo:slug,issue});
 let chain=bestChain(bundle.packets);
 let last=chain.at(-1);
 if(last.stage==='CHAT_INTENT'){
-  const drafts=bundle.drafts.filter(d=>d.task_id===last.task_id&&d.parent_packet_id===last.packet_id);
-  if(drafts.length!==1)throw new Error('EXACTLY_ONE_MATCHING_WORK_DRAFT_REQUIRED');
+  let drafts=bundle.drafts.filter(d=>d.task_id===last.task_id&&d.parent_packet_id===last.packet_id);
+  // Work comments may become visible a moment after the user switches back to WSL.
+  // Retry only the safe zero-draft case; duplicates still fail closed immediately.
+  for(let attempt=0;drafts.length===0&&attempt<4;attempt++){
+    await new Promise(r=>setTimeout(r,1500));
+    bundle=await fetchIssueBundle({repo:slug,issue});
+    chain=bestChain(bundle.packets);last=chain.at(-1);
+    drafts=bundle.drafts.filter(d=>d.task_id===last.task_id&&d.parent_packet_id===last.packet_id);
+  }
+  if(drafts.length!==1)throw new Error('EXACTLY_ONE_MATCHING_WORK_DRAFT_REQUIRED: observed='+drafts.length);
   const packet=sealWorkDraft(last,drafts[0],{packetId:'work-001'});
   const out=path.join(os.tmpdir(),'relay-g5-work-'+issue+'.md');
   writePacketFile(packet,out);
