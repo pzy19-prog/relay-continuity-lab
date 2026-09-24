@@ -50,14 +50,30 @@ export function sealWorkDraft(chatPacket,draft,{packetId='work-001'}={}){
 }
 
 export async function fetchIssueBundle({repo='pzy19-prog/relay-continuity-lab',issue}){
-  const base='https://api.github.com/repos/'+repo;
-  const api=async url=>{const r=await fetch(url,{headers:{accept:'application/vnd.github+json','user-agent':'relay-lab-g5'}});if(!r.ok)throw new Error('GITHUB_READ_'+r.status);return r.json();};
-  const item=await api(base+'/issues/'+issue);
-  const comments=await api(base+'/issues/'+issue+'/comments?per_page=100');
+  const endpoint='repos/'+repo+'/issues/'+issue;
+  const ghJson=(ep)=>{
+    const r=spawnSync('gh',['api',ep],{encoding:'utf8',timeout:30000});
+    if(r.status!==0)return null;
+    try{return JSON.parse(r.stdout);}catch{return null;}
+  };
+  let reader='gh';
+  let item=ghJson(endpoint);
+  let comments=ghJson(endpoint+'/comments?per_page=100');
+  if(item===null||comments===null){
+    reader='fetch';
+    const base='https://api.github.com/repos/'+repo;
+    const api=async url=>{
+      const r=await fetch(url,{headers:{accept:'application/vnd.github+json','user-agent':'relay-lab-g5'}});
+      if(!r.ok)throw new Error('GITHUB_READ_'+r.status);
+      return r.json();
+    };
+    item=await api(base+'/issues/'+issue);
+    comments=await api(base+'/issues/'+issue+'/comments?per_page=100');
+  }
   const all=[item.body||'',...comments.map(c=>c.body||'')];
   const packets=all.flatMap(extractPackets);
   const drafts=all.flatMap(extractWorkDrafts);
-  return {item,comments,packets,drafts};
+  return {item,comments,packets,drafts,reader};
 }
 
 export function bestChain(packets){
