@@ -2,123 +2,86 @@
 
 [English](README.md) | **简体中文**
 
-**状态：公开开发预览 / pre-alpha。仓库名称仅为工程占位名，正式产品品牌未确定；G2–G10 已验收；G10 已证明经过验证的 cloud transport 只有在显式人工授权 bind 后才能成为本地 Relay task，并保持 canonical task identity、scope、test、constraints 与不可变 provenance，同时仍停在 executor handoff 之前。**
+切换 AI 工具接续任务时，人往往要重新解释背景、重建状态，再核对“已完成”是否符合实际结果。Relay Lab 用显式交接包和本地恢复点保存任务身份、约束与交付证据，让接手方能检查这些信息，并在证据或环境不一致时停下来。
 
-Relay Lab 验证不同 AI 使用界面之间的任务连续性。当前已经实现：单用户本地 Core、CLI、显式 transport packet、结构化 Receipt、Git / 文件哈希 / 独立测试校验、持久化恢复点、可安装项目级 Skill、受保护的 GitHub transport helper、可显示跨端 lineage 的**只读** Web UI，以及 loopback-only 的只读/状态 Relay Service API。它仍然不是 Chat/Work 隐藏会话同步，也不能让云端直接控制本机 WSL。
+**公开开发预览 / pre-alpha：本地、单用户、单进程实验。** 仓库名称仅为工程占位名，不代表正式产品品牌或稳定发布。最近记录的里程碑是 2026-09-24 验收的 [G10 显式绑定](docs/devlog/0010-g10-explicit-bind-accepted.zh-CN.md)。
 
-> 待验证的产品假设：跨 AI 界面保留正确的任务状态、约束与证据，无需反复粘贴完整对话；遇到过期环境或证据不足时明确阻断。
+## 已实现什么，停在哪里
 
-## 在 WSL 中进行第一个真实 Agent 人工交接
+| 已实现 | 本仓库尚未实现 |
+| --- | --- |
+| 本地 Core/CLI、结构化交接包与回执、项目级 Skill、持久化恢复点 | Chat/Work/Codex 隐藏会话同步、Chat/Work 直接控制 WSL、通用自主执行器 |
+| 独立检查 Git、task/actor/base/head、改动路径、文件哈希和指定测试 | 语义正确性保证、强 actor/human 身份认证、签名证据、不可信代码沙箱 |
+| 本机回环地址上的只读 Web 时间线和 Relay Service API | 远程 Service 访问、服务端审批、多用户权限、并发写保护 |
+| 受限 GitHub Issue transport 同步到独立 Transport Inbox，再显式绑定本地任务 | G10 绑定后自动交接执行器、写代码、提交回执、验证或批准 |
 
-[详细操作说明](docs/wsl-pilot.zh-CN.md)包含隔离安装、生成合成任务、向本地 Agent 人工交接、采集回执、独立验证、人工批准的完整步骤。公开仓库建成后，在 WSL 运行：
+这些边界只描述本公开 Lab，不用于判断其他 PZY 组件的能力。actor/human 字段是流程约定，哈希不是签名；JSON 持久化是没有并发写保护的单用户、单进程实验。
+
+## 一个任务，两条分开的路径
+
+以受控的计算器任务为例：人交出只允许修改 `calc.mjs` 的任务，已授权的本地 Agent 提交修复，Relay 对照 Git、文件证据和未改动的测试检查回执，再由人审查决定；中断后，另一个进程读取恢复点。这是包含明确人工步骤的合成试点。
+
+```text
+可选 GitHub transport 路径（G9/G10）：
+GitHub Issue -> 已验证的 Transport Inbox
+             -> 显式人工授权 bind -> 本地任务：CREATED
+                                          [停在 handoff 之前]
+
+本地执行路径：
+本地任务 -> 显式 handoff -> 已授权本地 Agent -> receipt
+         -> 独立 verify -> VERIFIED_PENDING_DECISION
+         -> 人工显式 APPROVE / REJECT -> checkpoint / resume
+```
+
+G10 保留同一个任务 ID、范围、测试、约束，以及来源数据包和本地基线的 provenance。绑定不会启动执行；`handoff` 只生成交接包，不自动派单。`verify` 成功后进入 `VERIFIED_PENDING_DECISION`，之后的 `decide` 是单独的人工动作。`UNKNOWN` 回执停在 `WAITING_RECONCILIATION` 等待核查；这是安全停止，不是自动恢复运行时。
+
+## 离线合成试用
+
+要求：**Node >=22、Git**。以下命令使用 Ubuntu/WSL 的 Bash。取得源码后，检查可离线运行，无需云账户、模型或 Agent，也不需要安装依赖。只有可选 GitHub transport 指南需要已认证的 `gh`。
+
+**只运行你已经信任的仓库和测试。** 独立检查会执行仓库代码，Relay 不是恶意代码沙箱。
 
 ```bash
 git clone https://github.com/pzy19-prog/relay-continuity-lab.git
 cd relay-continuity-lab
 npm test
-node scripts/pilot-prepare.mjs
 ```
 
-只允许 Agent 访问脚本生成的**合成临时仓库**，不能复制真实私人仓库或密钥。执行器提交后使用 `node scripts/pilot-finish.mjs <脚本实际输出目录>` 校验，再人工审查决定是否通过。G2 已在用户 WSL 完成真实本地 Agent 的修改提交、独立校验、人工批准和独立进程恢复；G3 的真实 Skill 调用仍待验证。
+`npm test` 先运行 Node 测试集，再在临时合成 Git fixture 上运行 `benchmark/smoke.mjs`。它验证受控示例，不会启动真实 coding Agent。smoke 脚本有自己的独立合成校验器，其 10 条断言不能视为 10 条生产 Core 端到端测试。
 
+要观察持久化任务并让真实本地 coding Agent 执行，请单独使用 [WSL 试点](docs/wsl-pilot.zh-CN.md)或[项目 Skill 试点](docs/skill-pilot.zh-CN.md)。[G6 操作指南](docs/g6-unified-demo.md)介绍显式 transport demo；[G8](docs/g8-service-backed-adapters.md)介绍通过 Service 读取状态的 UI/Skill。早期指南保留原阶段的状态措辞；后续观察以以下带日期的记录为准。
 
-## 离线运行（Node >=22、Git）
+本地状态默认保存在 `~/.relay-lab-local/tasks/*.json`，可用 `RELAY_STORE` 或 `--store <path>` 隔离。不要公开提交本地状态；数据包可能包含本机绝对路径，对外分享前先脱敏。
 
-```bash
-npm test
-npm run relay -- list
-node scripts/skill-pilot-prepare.mjs
-# 从脚本输出中取得真实的 store 路径：
-RELAY_STORE=/tmp/<实际生成目录>/state npm run ui
-# 本机浏览器打开 http://127.0.0.1:4317
-```
+## 历史验收记录
 
-演示程序只操作新创建的、无敏感数据的临时 Git 仓。真实使用时，只能指向你已经信任的本地仓库和测试代码；独立校验会执行仓库测试，**不是恶意代码沙箱**。不需要云服务或付费模型。
+以下是已有的观察记录，**不表示本次文档更新重新跑过这些检查**。
 
-CLI 操作示例：
+| 记录及出处 | 观察与范围 |
+| --- | --- |
+| 2026-09-23 [初始 STATUS 快照](STATUS.md) | artifact container 中 13/13 Node 集成测试 + 10/10 合成断言；当时 WSL/真实 Agent gate 尚未完成 |
+| G10 之前的[中文 README 快照](https://github.com/pzy19-prog/relay-continuity-lab/blob/4549783c8573379574ca42df3ed4798bfff7443a/README.zh-CN.md) | 保留了更早隔离环境的 19/19 + 10/10 结果，未单独注明运行日期；不是后来的 G10 基线 |
+| 2026-09-24 [G10 时期 README 记录](https://github.com/pzy19-prog/relay-continuity-lab/blob/4549783c8573379574ca42df3ed4798bfff7443a/README.md#observed-local-checks) | 用户观察到的 WSL 基线：43/43 Node 测试 + 10/10 独立合成 smoke 断言 |
+| 2026-09-24 [G10 试点日志](docs/devlog/0010-g10-explicit-bind-accepted.zh-CN.md) | 一次显式 bind 只创建一个 `CREATED` 任务，重复相同绑定幂等；没有 handoff、代码执行、receipt、verify 或 decision |
 
-```bash
-node src/cli.mjs create --goal '修复计算错误' --repo /绝对路径/可信仓库 --actor local-executor --allowed src/calc.mjs --test src/calc.test.mjs
-node src/cli.mjs handoff <任务ID>       # 只输出交接包，不自动派单
-node src/cli.mjs receipt <任务ID> --file receipt.json
-node src/cli.mjs verify <任务ID>        # Git HEAD、文件范围和哈希、独立测试
-node src/cli.mjs decide <任务ID> --decision APPROVE  # 必须有明确的人工批准
-node src/cli.mjs resume <任务ID>
-node src/cli.mjs list
-```
+G10 测试数字来自链接的 README 记录，试点日志记录绑定行为。两者都不是生产基准、对抗性安全审计或竞品实测。
 
-默认状态目录为 `~/.relay-lab-local/tasks/*.json`；可设置 `RELAY_STORE` 或 `--store <目录>` 隔离。不要将本地状态目录公开提交。交接包中可能含本机绝对路径，对外分享前必须脱敏。
+## 里程碑与详细指南
 
-## 实现结构
+| 阶段 | 公开记录 / 指南 |
+| --- | --- |
+| G2：人工交接给本地 Agent | [WSL 试点](docs/wsl-pilot.zh-CN.md)；[G3 日志](docs/devlog/0003-installable-project-skill.zh-CN.md)记录了此前 G2 结果 |
+| G3：项目 Skill 与任务状态绑定 | [安装说明](docs/skill-pilot.zh-CN.md)、[早期待验证 gate](docs/devlog/0003-installable-project-skill.zh-CN.md)、[首次真实调用因 store 绑定失败](docs/devlog/0004-first-skill-binding-failure.zh-CN.md) |
+| G4/G5：显式跨界面闭环与 transport helper | [G4 指南](docs/g4-chat-work-codex.md)、[G5 指南](docs/g5-transport-ui.md)、[G4 记录的真实本地 Codex Skill 执行](docs/devlog/0005-first-cross-surface-loop.zh-CN.md) |
+| G6：统一 demo 入口 | [指南](docs/g6-unified-demo.md)、[验收与实测命令数](docs/devlog/0006-g6-unified-demo-accepted.zh-CN.md) |
+| G7/G8：本地 Service 与只读客户端 | [G7 指南](docs/g7-local-service.md)、[G7 验收](docs/devlog/0007-g7-local-service-accepted.zh-CN.md)、[G8 指南](docs/g8-service-backed-adapters.md)、[G8 验收](docs/devlog/0008-g8-service-backed-adapters-accepted.zh-CN.md) |
+| G9：受限 transport 同步 | [指南](docs/g9-transport-sync-worker.md)、[验收](docs/devlog/0009-g9-github-sync-worker-accepted.zh-CN.md) |
+| G10：显式 bind，停在 `CREATED` | [指南](docs/g10-transport-bind.md)、[验收](docs/devlog/0010-g10-explicit-bind-accepted.zh-CN.md) |
 
-```text
-Skill / CLI（人工交接）       Web 时间线（只读）
-          \                    /
-               Relay Core
-               | Task、State、Events
-               | Handoff、Receipt、独立验证
-               | 人工决策、恢复点
-               v
-         本地 JSON 状态目录
-               |
-          可信临时 Git 仓库
-```
+早期“Skill 调用待验证”描述的是当时 gate；后来的 G4 日志已记录真实本地 Codex Skill 执行，不能把它们当作同时存在的当前状态。
 
-当前使用 JSON 是为了实现无第三方依赖、可离线复现的**单进程研究原型**。SQLite、并发控制、权限、TypeScript 合约、真正的平台适配器及正式 PWA 安装均未实现。不支持不可信仓库执行，Web UI 只监听本机地址，且只读。
+## 研究与交流
 
-## 本轮已观察到的测试结果
+可从[为什么做这个实验](docs/0000-why-we-are-building.md)、[Skill 说明](skills/relay/SKILL.md)和[路线图](docs/roadmap-v0.1.md)开始。路线图是此前计划，实际实现状态以本 README 和带日期的开发日志为准。问题与可复现观察可通过 [GitHub Issues](https://github.com/pzy19-prog/relay-continuity-lab/issues)交流，只分享合成、脱敏后的证据。
 
-本隔离执行环境中，**19/19 集成测试 + 10/10 原有设计断言通过**，新增针对提交后工作树污染、未跟踪文件、文件/测试符号链接的阻断回归用例。这不代表恶意代码安全审计、真实 Agent 接入成功，也不是竞品实测结果。
-
-## 公开研究资料
-
-- [G3 Skill 安装与 WSL 试点](docs/skill-pilot.zh-CN.md)；[G3 公开开发记录](docs/devlog/0003-installable-project-skill.zh-CN.md)。
-
-- [首篇开发日志](docs/0000-why-we-are-building.md)：区分观察事实、待验证假设与宣传。
-- [Skill](skills/relay/SKILL.md)：教会具备本地 CLI 权限的 Agent 使用本工具；不是自动互联能力。
-- [产品路线](docs/roadmap-v0.1.md)：此前计划；实际完成程度以本 README 为准。
-
-
-**由 PZY Nexus 孵化**（仅用于说明来源；产品独立可运行，不依赖 Nexus）。
-## G3：安装并试用项目级 Skill
-
-不再下载 ZIP，也不需要操作原 G2 的临时目录：
-
-```bash
-cd ~/relay-continuity-lab
-git pull --ff-only
-npm test
-node scripts/skill-pilot-prepare.mjs
-```
-
-脚本会创建**全新合成仓库**，预先装好 `.agents/skills/relay-lab/`，并提交为 Git 基线。在 Cursor WSL 打开输出的 `demo-repo`，让真实 Agent 读取 `AGENT_TASK.md` 并**实际调用**项目 Skill 的 `show`、`resume`，然后仅修改并提交 `calc.mjs`。由独立的 `skill-pilot-finish.mjs` 进行验证，仍需要你人工批准。详见[完整中文指南](docs/skill-pilot.zh-CN.md)。
-
-最近一次用户 WSL 的 G10 基线为 **43/43 Node 测试 + 10/10 smoke assertions 通过**。fresh local pilot 将已验收的 G9 `work-001` 通过显式 bind 创建为且仅创建为一个 `CREATED` 本地 task；canonical task ID、scope/test/constraints 保持不变，source packet 与 local base provenance 被记录，重复 bind 幂等。全程没有 handoff、代码执行、receipt、verify 或 decision。
-
-## G4：Chat → Work → Codex 显式中转
-
-G4 暂时使用专用 GitHub Issue 作为可审计 transport：Chat 发布封装后的意图包，Work 产生结构化 continuation draft，Chat 负责确定性校验和封装，WSL 再校验 packet chain 并以同一个 canonical task ID 创建本地 Relay 任务。详见 [G4 指南](docs/g4-chat-work-codex.md)。这不等于隐藏会话同步，也不是 Work 直接访问 WSL。
-
-## G5：减少人工 transport 步骤
-
-G5 已实现并实测本地 transport adapter：自动校验 Work draft、封装 `WORK_CONTINUATION`、仅在显式 flag 下通过已认证的 `gh` 发布、把 transport snapshot 与 Relay state 一起保存，并在只读 UI 中显示完整 packet lineage。一次真实合成 G5 任务已经经过人工批准和批准后 resume。详见 [G5 指南](docs/g5-transport-ui.md)。
-
-## G6：统一 Demo 入口
-
-G6 已实测 `npm run demo -- ...` 与 pilot-local `relay-demo` launcher，统一承载 `prepare`、`status`、`finish`、显式 `approve`、脱敏 `report` 和恢复提示。本轮 fresh run 真实记录 6 次统一 demo CLI 命令、0 次手工 JSON 复制；不为 G4/G5 事后杜撰精确点击/切换数量。详见 [G6 指南](docs/g6-unified-demo.md)。
-
-## G7：本地 Relay Service/API
-
-G7 已实测 loopback-only（`127.0.0.1`）只读/状态 API，包括 `health`、task detail 和 checkpoint。已验收 G6 JSON store 无需迁移即可直接服务；真实 WSL 停止/重启后，task ID、`COMPLETED` 状态、owner、head、`environment_match=true`、`worktree_clean=true` 以及完整 `CHAT_INTENT → WORK_CONTINUATION → EXECUTION_RECEIPT` lineage 均保持一致。该 Service 明确不开放远程 bind、CORS、cloud tunnel、provider credentials，也不允许 service-side 自动审批。详见 [G7 指南](docs/g7-local-service.md)。
-
-## G8：Service-backed 本地适配器
-
-G8 已验收。Web UI 可通过 `RELAY_SERVICE_URL=http://127.0.0.1:4318` 运行，并明确显示 `Data source: service-v1`；项目 Skill 的只读命令 `service-health`、`service-show`、`service-checkpoint` 通过同一个 Service Contract 工作，不需要 `.relay-lab.json` 或 `--store`。fresh Luna pilot 在 Service 重启前后均看到同一个 `R-G8-SERVICE-ADAPTER-001` 与 `chat-001 -> work-001` lineage，没有直接 JSON 读取或状态变更。详见 [G8 指南](docs/g8-service-backed-adapters.md)。
-
-## G9：受限 GitHub transport sync worker
-
-G9 已验收。本地 authenticated-`gh api` worker 可监控一个明确配置的 GitHub repo/Issue，校验 packet hash、lineage 与 public-safety，确定性 seal 唯一合法 Work draft，并把已接受链路镜像到独立 Transport Inbox。fresh pilot 达到 `chat-001 -> work-001`，重复 sync 与 worker restart 均幂等，同时 `Task Inbox` 保持为空。service-backed UI 人工可见验证了 `VALIDATED`、来源 Issue #13、`Last: work-001 · seq 2` 以及两段 validated cloud lineage。全程没有手工 transport-import、没有本地代码执行、没有 receipt/verify/decide，也没有自动批准。详见 [G9 指南](docs/g9-transport-sync-worker.md)。
-
-## G10：显式 Transport Inbox → Local Task 绑定
-
-G10 已验收。经过验证的 Transport Inbox item 只有通过显式人工授权 bind（指定 canonical task、target repo、reviewed packet ID 与 hash）后，才会成为本地 Relay task。fresh pilot 保持 `R-G9-GITHUB-SYNC-001`，只创建一个 `CREATED`、owner=`human` 的本地 task；goal/paths/test/constraints 原样保留，并将来源 Issue #13、`work-001` hash 与 exact local base commit 记录为不可变 provenance。重复相同 bind 返回 `IDEMPOTENT`。Service/UI 明确区分已同步的 Transport Inbox（`VALIDATED / BOUND`）和独立的本地 Task（`CREATED`）。没有自动 executor handoff 或代码执行。详见 [G10 指南](docs/g10-transport-bind.md)。
+**名称仍是占位，品牌未核验。由 PZY Nexus 孵化**（仅说明来源；可独立使用，不是运行时依赖）。采用 [MIT 许可](LICENSE)，许可不代表产品已就绪。

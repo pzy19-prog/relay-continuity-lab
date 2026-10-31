@@ -2,116 +2,86 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**Status: public development preview / pre-alpha. The repository slug is a temporary engineering name; no final product brand or public release. G2–G10 are accepted. G10 proved that a validated cloud transport can become a local Relay task only through an explicit human-authorized bind that preserves canonical task identity, scope, test, constraints and immutable provenance, while still stopping before executor handoff.**
+Switching AI tools often means explaining the task again, reconstructing its state, and checking whether “done” matches the result. Relay Lab saves task identity, constraints and delivery evidence in explicit handoff packets and local checkpoints, so the next participant can inspect them and stop when evidence or environment disagrees.
 
-Relay Lab explores evidence-bound task continuity across specialized AI surfaces. It now implements a local single-user Core, CLI, explicit transport packets, independent Git/file/test checks, persisted checkpoint/resume, a locally installable project-scoped Skill, guarded GitHub transport helpers, a *read-only* Web timeline, and a loopback-only read/status Relay Service API. It still **does not** provide hidden-session synchronization or direct Chat/Work-to-WSL control.
+**Public development preview / pre-alpha: a local, single-user, single-process experiment.** The repository slug is a temporary engineering name, not a final product brand or stable release. The latest recorded milestone is [G10 explicit binding](docs/devlog/0010-g10-explicit-bind-accepted.zh-CN.md), accepted on 2026-09-24.
 
-> Product thesis (to be tested): preserve the right task state, constraints and evidence across AI surfaces without repeatedly restating the full conversation — and fail visibly when evidence or environment is inconsistent.
+## What works, and where it stops
 
-## First pilot on Ubuntu WSL
+| Implemented | Not implemented here |
+| --- | --- |
+| Local Core/CLI, structured handoff/receipt, project-scoped Skill and persisted checkpoints | Hidden Chat/Work/Codex session sync, direct Chat/Work control of WSL, or a general autonomous executor |
+| Independent Git, task/actor/base/head, changed-path, file-hash and declared-test checks | Semantic correctness guarantees, strong actor/human authentication, signed evidence, or an untrusted-code sandbox |
+| Read-only loopback Web timeline and Relay Service API | Remote Service access, service-side approval, multi-user authorization or concurrent-write protection |
+| Bounded GitHub Issue transport sync into a separate Transport Inbox; explicit local binding | Automatic executor handoff, coding, receipt, verification or approval after G10 binding |
 
-Clone this public working repository. In your WSL shell:
+These boundaries describe this public Lab. They do not establish the capabilities of other PZY components. Actor/human fields are workflow conventions; hashes are not signatures. JSON persistence is a single-user, single-process experiment without concurrent-write protection.
+
+## One task, two separate paths
+
+A controlled calculator example makes the execution path concrete: a person hands off a task limited to `calc.mjs`; an authorized local Agent commits a fix; Relay checks the receipt against Git, file evidence and the unchanged test; a person reviews the result and decides; a later process reads the checkpoint. This is a synthetic pilot with explicit human steps.
+
+```text
+Optional GitHub transport path (G9/G10):
+GitHub Issue -> validated Transport Inbox
+             -> explicit human-authorized bind -> local task: CREATED
+                                                    [stop before handoff]
+
+Local execution path:
+Local task -> explicit handoff -> authorized local Agent -> receipt
+           -> independent verify -> VERIFIED_PENDING_DECISION
+           -> explicit human APPROVE / REJECT -> checkpoint / resume
+```
+
+G10 preserves the canonical task ID, scope, test, constraints and source-packet/local-base provenance. Binding does not start execution. `handoff` produces a packet; it does not dispatch an Agent. `verify` can reach `VERIFIED_PENDING_DECISION`, after which `decide` is a separate human action. An `UNKNOWN` receipt stops at `WAITING_RECONCILIATION` for inspection; this is a safe stop, not an automatic recovery runtime.
+
+## Offline synthetic quickstart
+
+Requirements: **Node >=22 and Git**. The commands below use Bash on Ubuntu/WSL. After obtaining the source, checks run offline with no cloud account, model or Agent; no dependency installation is needed. Only the optional GitHub transport guides require an authenticated `gh`.
+
+**Run tests only in repositories you already trust.** Independent checks execute repository code; Relay is not a malicious-code sandbox.
 
 ```bash
 git clone https://github.com/pzy19-prog/relay-continuity-lab.git
 cd relay-continuity-lab
 npm test
-node scripts/pilot-prepare.mjs
 ```
 
-Only give the generated synthetic `demo-repo` and `handoff.json` to an **authorized local coding Agent**. After it commits `calc.mjs` and no other file, run `node scripts/pilot-finish.mjs <printed-pilot_dir>` to create a candidate receipt, independently test, and stop at explicit human review. No actual Agent was used to produce this package. See [WSL guide (Chinese)](docs/wsl-pilot.zh-CN.md).
+`npm test` runs the Node test suite and then `benchmark/smoke.mjs` on temporary synthetic Git fixtures. It exercises controlled examples rather than launching a real coding Agent. The smoke script has its own standalone validator; its 10 assertions are not 10 production-Core end-to-end tests.
 
+For a persistent task and a real local coding Agent, follow the separate [WSL pilot](docs/wsl-pilot.zh-CN.md) or [project Skill pilot](docs/skill-pilot.zh-CN.md). The [G6 operator guide](docs/g6-unified-demo.md) covers the explicit transport demo; [G8](docs/g8-service-backed-adapters.md) covers Service-backed UI/Skill reads. Early guides retain their original gate-status wording; use the dated records below for later observations.
 
-## Offline quickstart (Node >=22, Git)
+Local state defaults to `~/.relay-lab-local/tasks/*.json`; isolate it with `RELAY_STORE` or `--store <path>`. Do not commit local state. Packets can contain absolute paths: sanitize them before public sharing.
 
-```bash
-npm test
-npm run relay -- list
-node scripts/skill-pilot-prepare.mjs
-# Read the demo_dir / store from the printed output, then:
-RELAY_STORE=/tmp/<actual-demo-dir>/state npm run ui
-# Open http://127.0.0.1:4317 in your local browser
-```
+## Historical acceptance records
 
-Demo creates a temporary synthetic Git repo. On real data, use the CLI **only for repos and tests you already trust**; independent tests execute repository code, so this is not a malicious-code sandbox. No cloud provider or account is required.
+These are recorded observations, **not a claim that the checks were rerun for this documentation update**.
 
-CLI commands:
+| Record and source | Observation and scope |
+| --- | --- |
+| 2026-09-23 [initial STATUS snapshot](STATUS.md) | 13/13 Node integration tests + 10/10 synthetic assertions in an artifact container; WSL/real-Agent gates were still pending at that time |
+| Pre-G10 [Chinese README snapshot](https://github.com/pzy19-prog/relay-continuity-lab/blob/4549783c8573379574ca42df3ed4798bfff7443a/README.zh-CN.md) | Retained an earlier isolated 19/19 + 10/10 result without a separate run date; this is not the later G10 baseline |
+| 2026-09-24 [G10-era README record](https://github.com/pzy19-prog/relay-continuity-lab/blob/4549783c8573379574ca42df3ed4798bfff7443a/README.md#observed-local-checks) | User-observed WSL baseline: 43/43 Node tests + 10/10 standalone synthetic smoke assertions |
+| 2026-09-24 [G10 pilot devlog](docs/devlog/0010-g10-explicit-bind-accepted.zh-CN.md) | One explicit bind created exactly one `CREATED` task; repeated identical bind was idempotent; no handoff, code execution, receipt, verify or decision occurred |
 
-```bash
-node src/cli.mjs create --goal 'Fix a known bug' --repo /absolute/trusted/repo --actor local-executor --allowed src/calc.mjs --test src/calc.test.mjs
-node src/cli.mjs handoff <task-id>             # prints explicit HandoffPacket; does NOT dispatch
-node src/cli.mjs receipt <task-id> --file receipt.json
-node src/cli.mjs verify <task-id>              # Git/head/path/hash + locally executed declared test
-node src/cli.mjs decide <task-id> --decision APPROVE  # explicit human action only
-node src/cli.mjs resume <task-id>
-node src/cli.mjs list
-```
+The G10 count comes from the linked README record; the pilot devlog documents the binding observations. Neither is a production benchmark, adversarial security audit or hands-on competitor comparison.
 
-State defaults to `~/.relay-lab-local/tasks/*.json`. Set `RELAY_STORE` or pass `--store <path>` to isolate it. For a public demo do not commit your local state directory; packet output includes absolute local paths, so redact before external sharing.
+## Milestones and detailed guides
 
-## Architecture
+| Stage | Public record / guide |
+| --- | --- |
+| G2 — manual local-Agent handoff | [WSL pilot](docs/wsl-pilot.zh-CN.md); the [G3 devlog](docs/devlog/0003-installable-project-skill.zh-CN.md) records the preceding G2 result |
+| G3 — project Skill and task-state binding | [Installation](docs/skill-pilot.zh-CN.md), [initial pending gate](docs/devlog/0003-installable-project-skill.zh-CN.md), [first real invocation failed on store binding](docs/devlog/0004-first-skill-binding-failure.zh-CN.md) |
+| G4/G5 — explicit cross-surface loop and transport helpers | [G4 guide](docs/g4-chat-work-codex.md), [G5 guide](docs/g5-transport-ui.md), [real local Codex Skill execution recorded in G4](docs/devlog/0005-first-cross-surface-loop.zh-CN.md) |
+| G6 — unified demo operator | [Guide](docs/g6-unified-demo.md), [acceptance and measured command counts](docs/devlog/0006-g6-unified-demo-accepted.zh-CN.md) |
+| G7/G8 — local Service and read clients | [G7 guide](docs/g7-local-service.md), [G7 acceptance](docs/devlog/0007-g7-local-service-accepted.zh-CN.md), [G8 guide](docs/g8-service-backed-adapters.md), [G8 acceptance](docs/devlog/0008-g8-service-backed-adapters-accepted.zh-CN.md) |
+| G9 — bounded transport sync | [Guide](docs/g9-transport-sync-worker.md), [acceptance](docs/devlog/0009-g9-github-sync-worker-accepted.zh-CN.md) |
+| G10 — explicit bind, stopping at `CREATED` | [Guide](docs/g10-transport-bind.md), [acceptance](docs/devlog/0010-g10-explicit-bind-accepted.zh-CN.md) |
 
-```text
-Skill / CLI (manual adapter)       Read-only Web Timeline
-             \                      /
-              Local Relay Core
-              | Task + State + Events
-              | Handoff / Receipt / Independent Checks
-              | Human Decision / Resume
-              v
-         Local JSON state
-              |
-      Trusted local Git fixture
-```
+The early “Skill invocation pending” statements describe those earlier gates. The later G4 record includes real local Codex Skill execution; they should not be read as simultaneous current statuses.
 
-Why JSON instead of SQLite today: a tiny zero-dependency, transparent *single-process research prototype* can be tested offline. SQLite, concurrency controls, authorization, TypeScript contracts, real adapters, PWA distribution and installation remain later work. This is **not** secure for concurrent writes or untrusted repo execution. UI listens on loopback (`127.0.0.1`) only and is read-only.
+## Research and discussion
 
-## Observed local checks
+Start with [why we are building](docs/0000-why-we-are-building.md), the [Skill instructions](skills/relay/SKILL.md), and the [roadmap](docs/roadmap-v0.1.md) (a prior plan; use this README and dated devlogs for implementation status). Questions and reproducible findings are welcome through [GitHub Issues](https://github.com/pzy19-prog/relay-continuity-lab/issues); share synthetic, sanitized evidence only.
 
-The latest user-observed G10 WSL baseline passed **43/43 Node tests + 10/10 smoke assertions**. A fresh local pilot explicitly bound the accepted G9 `work-001` transport into exactly one `CREATED` local task with the same canonical task ID, exact scope/test/constraints, immutable source packet/local-base provenance, and idempotent repeated bind. No handoff, code execution, receipt, verification or decision occurred. Tests execute trusted local repository code, not an untrusted-code sandbox.
-
-## Research / public development
-
-- [Public devlog](docs/0000-why-we-are-building.md) — claim/evidence separation required.
-- [Skill](skills/relay/SKILL.md) — instructions for an AI assistant that can run this local CLI. Not an autonomous adapter.
-- [Roadmap](docs/roadmap-v0.1.md) — prior plan; current implementation status is this README.
-
-
-**Working name only — brand unverified.** An Apache/MIT-style open source license is not a product readiness claim. **Incubated by PZY Nexus** (provenance only; independently usable, not a runtime dependency).
-## G3 — Try the installable Skill on a fresh synthetic fixture
-
-```bash
-git pull --ff-only
-npm test
-node scripts/skill-pilot-prepare.mjs
-```
-
-This prepares a **new** isolated repository with a committed project-level `.agents/skills/relay-lab/` Skill and a generated `AGENT_TASK.md`. Open only that generated repo in Cursor WSL and ask an authorized Agent to discover **and actually invoke** the project Skill before performing the constrained calculator fix. After its commit, run `node scripts/skill-pilot-finish.mjs <pilot_dir>` back in the Relay source checkout. Explicit human approval is still mandatory. See [中文操作说明](docs/skill-pilot.zh-CN.md).
-
-## G4 — Chat → Work → Codex explicit transport
-
-G4 uses a dedicated GitHub Issue as a temporary, auditable transport. Chat publishes a sealed intent packet; Work emits a structured continuation draft; Chat validates/seals it; WSL then imports the packet chain and creates the same canonical task ID locally. See [G4 guide](docs/g4-chat-work-codex.md). This is not hidden-session synchronization or direct Work-to-WSL networking.
-
-## G5 — reduce manual transport steps
-
-G5 added and validated a local transport adapter that checks Work drafts, seals `WORK_CONTINUATION`, publishes only with explicit authenticated `gh` flags, stores a transport snapshot beside Relay state, and renders the packet lineage in the read-only UI. One real synthetic G5 run completed through human approval and post-decision resume. See [G5 guide](docs/g5-transport-ui.md).
-
-## G6 — unified demo operator
-
-G6 validated `npm run demo -- ...` plus a pilot-local `relay-demo` launcher as the unified operator path for `prepare`, `status`, `finish`, explicit `approve`, sanitized `report`, and recovery guidance. The accepted fresh run recorded 6 unified demo CLI commands and 0 manual JSON-copy actions. G4/G5 historical user-action counts are not retroactively invented. See [G6 guide](docs/g6-unified-demo.md).
-
-## G7 — local Relay Service/API
-
-G7 validated a loopback-only (`127.0.0.1`) read/status API with `health`, task detail and checkpoint endpoints. The accepted G6 JSON store required no migration. A real WSL stop/restart preserved task ID, `COMPLETED` state, owner, head, `environment_match=true`, `worktree_clean=true`, and the full `CHAT_INTENT → WORK_CONTINUATION → EXECUTION_RECEIPT` lineage. The service intentionally has no remote bind, CORS, cloud tunnel, provider credentials or service-side approval. See [G7 guide](docs/g7-local-service.md).
-
-## G8 — service-backed local adapters
-
-G8 is accepted. The Web UI can run with `RELAY_SERVICE_URL=http://127.0.0.1:4318` and visibly reports `Data source: service-v1`; project Skill read commands `service-health`, `service-show`, and `service-checkpoint` use the same Service Contract without requiring `.relay-lab.json` or `--store`. A fresh Luna pilot observed the same `R-G8-SERVICE-ADAPTER-001` task and `chat-001 -> work-001` lineage before and after Service restart, with no direct JSON reads or state changes. See [G8 guide](docs/g8-service-backed-adapters.md).
-
-## G9 — bounded GitHub transport sync worker
-
-G9 is accepted. A local authenticated-`gh api` worker can watch one explicitly configured GitHub repo/Issue, validate packet hash/lineage/public-safety, deterministically seal one valid Work draft, and mirror the accepted chain into a separate Transport Inbox. The fresh pilot reached `chat-001 -> work-001` with repeated sync and restart idempotence, while `Task Inbox` remained empty. The service-backed UI visibly showed `VALIDATED`, source Issue #13, `Last: work-001 · seq 2`, and the two-stage validated cloud lineage. No manual transport-import command, local code execution, receipt/verify/decide, or auto-approval occurred. See [G9 guide](docs/g9-transport-sync-worker.md).
-
-## G10 — explicit Transport Inbox → Local Task binding
-
-G10 is accepted. A validated Transport Inbox item becomes a local Relay task only through an explicit human-authorized bind naming the canonical task, target repo, reviewed packet ID and reviewed packet hash. The accepted fresh pilot preserved `R-G9-GITHUB-SYNC-001`, created exactly one local task in `CREATED` with owner `human`, preserved goal/paths/test/constraints, recorded source Issue #13 + `work-001` hash + exact local base commit as immutable provenance, and returned `IDEMPOTENT` on repeat. Service/UI visibly distinguish the synced Transport Inbox item (`VALIDATED / BOUND`) from the separate local task (`CREATED`). No executor handoff or code execution happened automatically. See [G10 guide](docs/g10-transport-bind.md).
+**Working name only — brand unverified. Incubated by PZY Nexus** (provenance only; independently usable, not a runtime dependency). [MIT license](LICENSE); the license is not a product-readiness claim.
